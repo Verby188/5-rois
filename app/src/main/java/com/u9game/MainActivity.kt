@@ -1,4 +1,4 @@
-package com.u9game
+package com.cinqrois
 
 import android.annotation.SuppressLint
 import android.os.Bundle
