@@ -250,6 +250,18 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 @keyframes pulse-gold{0%,100%{box-shadow:0 0 0 0 rgba(200,160,0,.4)}50%{box-shadow:0 0 0 8px rgba(200,160,0,0)}}
 .pulse{animation:pulse-gold 1.5s infinite}
 
+/* ══ TURN ALERT ══ */
+#turn-alert{position:fixed;top:0;left:0;right:0;z-index:200;display:flex;flex-direction:column;
+  align-items:center;justify-content:center;gap:.5rem;padding:1.2rem;
+  background:linear-gradient(135deg,rgba(10,40,20,.97),rgba(6,25,12,.97));
+  border-bottom:3px solid var(--gold);box-shadow:0 4px 30px rgba(0,0,0,.6);
+  transform:translateY(-100%);transition:transform .4s cubic-bezier(.22,1,.36,1);pointer-events:none}
+#turn-alert.show{transform:translateY(0);pointer-events:auto}
+.ta-title{font-family:'Cinzel',serif;font-size:1.1rem;color:var(--gold);letter-spacing:.1em;
+  text-shadow:0 0 20px rgba(200,160,0,.5)}
+.ta-sub{font-size:.8rem;color:rgba(255,255,255,.6)}
+.ta-bar{width:0%;height:3px;background:var(--gold);border-radius:2px;transition:width linear}
+
 /* ══ MOBILE ══ */
 @media(max-width:600px){
   #s-lobby,#s-net,#s-waiting{gap:1.2rem;padding:1.4rem .75rem}
@@ -288,6 +300,13 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 </style>
 </head>
 <body>
+
+<!-- ══ TURN ALERT ══ -->
+<div id="turn-alert">
+  <div class="ta-title" id="ta-title">🃏 C'est ton tour !</div>
+  <div class="ta-sub" id="ta-sub">Piochez une carte</div>
+  <div class="ta-bar" id="ta-bar"></div>
+</div>
 
 <!-- ══ LOBBY ══ -->
 <div id="s-lobby" class="scr on">
@@ -627,6 +646,7 @@ function checkCanStart(){
 }
 
 function hostStart(){
+  saveSession();
   if(!G){
     // Build player list and start game
     const players=[];
@@ -672,6 +692,7 @@ function handleHostMsg(msg,myName){
     document.getElementById('w-msg').textContent=`Connecté en tant que Joueur ${msg.playerIdx+1}. En attente…`;
     // Send name to host
     NET.conns[0].send({t:'setname',name:myName});
+    saveSession();
     return;
   }
   if(msg.t==='state'){
@@ -679,7 +700,15 @@ function handleHostMsg(msg,myName){
     GS=msg;
     if(!wasGame){show('game');setBadge();}
     // If cur changed TO me, clear local state
-    if(GS.cur===GS.myIdx&&(!wasGame||GS._prevCur!==GS.myIdx)){GSL.selCard=null;GSL.meldGroups=[];}
+    const prevCur=wasGame?(GS._prevCur??-1):-1;
+    if(GS.cur===GS.myIdx){
+      if(!wasGame||prevCur!==GS.myIdx){
+        GSL.selCard=null;GSL.meldGroups=[];
+        notifyMyTurn(GS.players[GS.myIdx].name,GS.players[GS.myIdx].color,
+          GS.goingOut!==-1?'⚡ Dernier tour !':'Piochez une carte');
+      }
+    }
+    GS._prevCur=GS.cur;
     if(GSL.sortBy)guestApplySort();
     renderGuest();
     if(GS.phase==='round_end')showPopupFromGS();
@@ -760,9 +789,11 @@ function startRound(){
   const starter=G.players[G.cur];
   setMsg(`Manche ${G.round}/11 — Bonus: ${dv(bv)} — ${starter.name} commence`,'');
   if(starter.isHuman){
-    if(NET.mode==='host'){G.phase='draw';render();broadcast();}
+    if(NET.mode==='host'){G.phase='draw';render();broadcast();
+      if(G.cur===0)notifyMyTurn(starter.name,starter.color,'Piochez une carte');
+    }
     else if(numHumans()>1){showCover();}
-    else{G.phase='draw';render();}
+    else{G.phase='draw';render();notifyMyTurn(starter.name,starter.color,'Piochez une carte');}
   }else{G.phase='ai_turn';render();broadcast();setTimeout(doAI,1200);}
 }
 
@@ -803,9 +834,13 @@ function advance(){
   G.selCard=null;G.meldGroups=[];
   if(p.isHuman){
     setMsg(G.goingOut!==-1?`⚡ Dernier tour pour ${p.name} !`:`À toi ${p.name} !`,'');
-    if(NET.mode==='host'){G.phase='draw';render();broadcast();}
+    if(NET.mode==='host'){G.phase='draw';render();broadcast();
+      if(G.cur===0){notifyMyTurn(p.name,p.color,G.goingOut!==-1?'⚡ Dernier tour !':'Piochez une carte');}
+    }
     else if(numHumans()>1)showCover();
-    else{G.phase='draw';render();}
+    else{G.phase='draw';render();
+      notifyMyTurn(p.name,p.color,G.goingOut!==-1?'⚡ Dernier tour !':'Piochez une carte');
+    }
   }else{G.phase='ai_turn';render();broadcast();setTimeout(doAI,1000);}
 }
 
@@ -875,6 +910,7 @@ function showEndFromGS(){
 }
 
 function backToSetup(){
+  clearSession();
   if(NET.peer)try{NET.peer.destroy()}catch(e){}
   NET.mode=null;NET.peer=null;NET.conns=[];G=null;GS=null;GSL={selCard:null,meldGroups:[],sortBy:null};
   document.getElementById('net-badge').style.display='none';
@@ -1011,7 +1047,14 @@ function showCover(){
   G.players.forEach(pp=>{const el=document.createElement('div');el.className='cvsc';el.innerHTML=`<div style="width:8px;height:8px;border-radius:50%;background:${pp.color};flex-shrink:0"></div><span>${pp.name} — ${pp.totalScore}</span>`;cs.appendChild(el)});
   document.getElementById('cover').classList.add('on');render();
 }
-function revealHand(){document.getElementById('cover').classList.remove('on');G.phase='draw';setMsg(G.goingOut!==-1?'⚡ Dernier tour ! Piochez puis défaussez.':'Piochez une carte.','');render()}
+function revealHand(){
+  document.getElementById('cover').classList.remove('on');
+  G.phase='draw';
+  const p=G.players[G.cur];
+  setMsg(G.goingOut!==-1?'⚡ Dernier tour ! Piochez puis défaussez.':'Piochez une carte.','');
+  render();
+  notifyMyTurn(p.name,p.color,G.goingOut!==-1?'⚡ Dernier tour !':'Piochez une carte');
+}
 
 // ═══════════════════════════════════════════
 // GUEST ACTIONS
@@ -1321,11 +1364,113 @@ function renderGuest(){
   }
 }
 
+// ══ TURN NOTIFICATION ══
+let _audioCtx=null;
+let _lastAlertTurn=-1; // prevent double alerts in same turn
+
+function getAudioCtx(){
+  if(!_audioCtx)_audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+  return _audioCtx;
+}
+
+function playTurnSound(){
+  try{
+    const ctx=getAudioCtx();
+    // Two-note chime: E5 then G#5
+    [[659,0,0.18],[831,0.18,0.22]].forEach(([freq,start,dur])=>{
+      const osc=ctx.createOscillator();const gain=ctx.createGain();
+      osc.connect(gain);gain.connect(ctx.destination);
+      osc.type='sine';osc.frequency.value=freq;
+      const t=ctx.currentTime+start;
+      gain.gain.setValueAtTime(0,t);gain.gain.linearRampToValueAtTime(0.18,t+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001,t+dur);
+      osc.start(t);osc.stop(t+dur);
+    });
+  }catch(e){}
+}
+
+function vibrateTurn(){
+  try{if(navigator.vibrate)navigator.vibrate([80,40,80]);}catch(e){}
+}
+
+function showTurnAlert(name,sub,color,duration=2800){
+  const el=document.getElementById('turn-alert');
+  const title=document.getElementById('ta-title');
+  const subEl=document.getElementById('ta-sub');
+  const bar=document.getElementById('ta-bar');
+  title.textContent=`🃏 À toi, ${name} !`;title.style.color=color||'var(--gold)';
+  subEl.textContent=sub||'Piochez une carte';
+  el.style.borderBottomColor=color||'var(--gold)';
+  // Reset bar
+  bar.style.transition='none';bar.style.width='100%';bar.style.background=color||'var(--gold)';
+  el.classList.add('show');
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    bar.style.transition=`width ${duration}ms linear`;bar.style.width='0%';
+  }));
+  clearTimeout(el._t);el._t=setTimeout(()=>el.classList.remove('show'),duration);
+}
+
+function notifyMyTurn(name,color,sub){
+  playTurnSound();vibrateTurn();showTurnAlert(name,sub,color);
+}
+
+// ══ RECONNECT ══
+const SAVE_KEY='cinq_couronnes_session';
+
+function saveSession(){
+  if(!NET.mode)return;
+  try{localStorage.setItem(SAVE_KEY,JSON.stringify({
+    mode:NET.mode,roomCode:NET.roomCode,
+    myIdx:NET.mode==='host'?0:GS?.myIdx??0,
+    myName:NET.mode==='host'?NET._hostName:(document.getElementById('join-name')?.value||'Joueur'),
+    ts:Date.now()
+  }));}catch(e){}
+}
+
+function clearSession(){try{localStorage.removeItem(SAVE_KEY);}catch(e){}}
+
+function tryReconnect(){
+  let saved;
+  try{saved=JSON.parse(localStorage.getItem(SAVE_KEY)||'null');}catch(e){return false;}
+  if(!saved||Date.now()-saved.ts>1800000)return false; // 30min max
+  // Show reconnect banner
+  const banner=document.createElement('div');
+  banner.style.cssText='position:fixed;bottom:1rem;left:50%;transform:translateX(-50%);z-index:300;background:rgba(10,40,20,.97);border:2px solid var(--gold);border-radius:12px;padding:.9rem 1.4rem;display:flex;flex-direction:column;align-items:center;gap:.6rem;box-shadow:0 4px 30px rgba(0,0,0,.6);min-width:260px;text-align:center';
+  banner.innerHTML=`<div style="font-family:Cinzel,serif;color:var(--gold);font-size:.85rem">Session en cours détectée</div>
+  <div style="font-size:.78rem;color:rgba(255,255,255,.55)">Code: <b style="color:var(--gold2)">${saved.roomCode}</b> · ${saved.mode==='host'?'Hôte':'Invité'}</div>
+  <div style="display:flex;gap:.6rem">
+    <button id="rb-yes" style="padding:.45rem 1rem;background:linear-gradient(135deg,#c8a000,#f0c830);border:none;border-radius:7px;font-family:Cinzel,serif;font-size:.75rem;color:#0a0a0a;cursor:pointer">Reprendre</button>
+    <button id="rb-no" style="padding:.45rem 1rem;border:1px solid rgba(255,255,255,.2);border-radius:7px;background:none;color:rgba(255,255,255,.5);font-size:.75rem;cursor:pointer;font-family:Cinzel,serif">Ignorer</button>
+  </div>`;
+  document.body.appendChild(banner);
+  document.getElementById('rb-no').onclick=()=>{banner.remove();clearSession()};
+  document.getElementById('rb-yes').onclick=()=>{
+    banner.remove();
+    if(saved.mode==='host'){
+      document.getElementById('host-name').value=saved.myName;
+      show('s-net');
+      document.getElementById('net-err').textContent='Recréation impossible — le code a changé. Créez une nouvelle partie.';
+      document.getElementById('net-err').style.display='block';
+      clearSession();
+    }else{
+      document.getElementById('join-name').value=saved.myName;
+      document.getElementById('join-code').value=saved.roomCode;
+      show('s-net');
+      clearSession();
+      // Auto-try to join
+      setTimeout(doJoin,300);
+    }
+  };
+  return true;
+}
+
 // Init
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('cover').classList.remove('on');
   document.getElementById('ov').classList.remove('on');
   document.getElementById('popup').classList.remove('on');
+  // Check for previous session
+  setTimeout(tryReconnect,600);
 });
 </script>
 </body>
