@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.u9game'
+    namespace 'com.5rois'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.u9game"
+        applicationId "com.5rois"
         minSdk 24
         targetSdk 34
         versionCode 1
