@@ -1492,8 +1492,10 @@ function tryReconnect(){
 const APP_SCHEME = 'cinqcouronnes';
 
 function buildInviteText(code){
-  const deep = `${APP_SCHEME}://join/${code}`;
-  return `🎴 Cinq Couronnes — Rejoins ma partie !%0ACode : ${code}%0A${deep}`;
+  // Lien HTTPS cliquable dans SMS -> GitHub Pages -> redirige vers cinqcouronnes://
+  const PAGES = 'https://Verby188.github.io/5-rois/join.html';
+  const link = `${PAGES}?code=${code}`;
+  return `🎴 Cinq Couronnes - Rejoins ma partie !%0ACode : ${code}%0A${link}`;
 }
 
 function sendSMSInvite(){
