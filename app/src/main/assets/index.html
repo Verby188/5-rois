@@ -605,29 +605,52 @@ function doCreate(){
   NET._hostName=name;
   updateWaitingList();
   try{
-    NET.peer=new Peer('cc'+code.toLowerCase(),{
-        host: 'cinq-couronnes-peer.onrender.com',
-        port: 443,
-        path: '/peerjs',
-        secure: true,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-          ]
-        },
-        debug: 0
-      });
-    NET.peer.on('error',e=>{
+    // Wake up Render server before connecting (handles cold start)
+    _connectWithRetry('cc'+code.toLowerCase(), true);
+const PEER_CFG = {
+  host: 'cinq-couronnes-peer.onrender.com',
+  port: 443,
+  path: '/peerjs',
+  secure: true,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ]
+  },
+  debug: 0
+};
+
+function _wakeServer(cb){
+  document.getElementById('w-msg').textContent = 'Connexion au serveur...';
+  fetch('https://cinq-couronnes-peer.onrender.com/peerjs')
+    .then(()=>setTimeout(cb, 800))
+    .catch(()=>setTimeout(cb, 800)); // continue even if fetch fails
+}
+
+function _connectWithRetry(peerId, isHost, attempt){
+  attempt = attempt || 1;
+  _wakeServer(()=>{
+    if(NET.peer) try{NET.peer.destroy()}catch(e){}
+    NET.peer = peerId ? new Peer(peerId, PEER_CFG) : new Peer(PEER_CFG);
+    NET.peer.on('error', e=>{
+      if((e.type==='network'||e.type==='server-error') && attempt < 3){
+        // Auto-retry up to 3 times with increasing delay
+        const delay = attempt * 3000;
+        document.getElementById('w-msg').textContent =
+          'Connexion... Tentative '+(attempt+1)+'/3';
+        setTimeout(()=>_connectWithRetry(peerId, isHost, attempt+1), delay);
+        return;
+      }
       const tips={
-        'network':'Impossible de joindre le serveur de connexion. Vérifiez votre Wi-Fi/4G.',
+        'network':'Impossible de joindre le serveur. Vérifiez votre Wi-Fi/4G.',
         'unavailable-id':'Ce code est déjà utilisé. Recréez une partie.',
         'peer-unavailable':'Joueur introuvable. Vérifiez le code.',
-        'server-error':'Serveur PeerJS indisponible. Réessayez dans quelques secondes.',
+        'server-error':'Serveur indisponible. Réessayez dans quelques secondes.',
         'ssl-unavailable':'Erreur SSL. Essayez avec une connexion différente.',
         'disconnected':'Connexion perdue. Vérifiez votre réseau.'
       };
-      showWErr(tips[e.type]||'Erreur réseau ('+e.type+'). Vérifiez votre connexion.');
+      showWErr(tips[e.type]||'Erreur ('+e.type+'). Vérifiez votre connexion.');
     });
     NET.peer.on('connection',conn=>{onGuestConnect(conn);});
     NET.peer.on('open',()=>{document.getElementById('w-msg').textContent='En attente des joueurs…';updateWaitingList();});
@@ -713,19 +736,7 @@ function doJoin(){
   document.getElementById('w-start-btn').style.display='none';
   document.getElementById('w-list').innerHTML='';
   try{
-    NET.peer=new Peer({
-        host: 'cinq-couronnes-peer.onrender.com',
-        port: 443,
-        path: '/peerjs',
-        secure: true,
-        config: {
-          iceServers: [
-            { urls: 'stun:stun.l.google.com:19302' },
-            { urls: 'stun:stun1.l.google.com:19302' },
-          ]
-        },
-        debug: 0
-      });
+    _connectWithRetry(null, false);
     NET.peer.on('error',e=>{showWErr('Erreur: '+e.type);});
     NET.peer.on('open',()=>{
       const conn=NET.peer.connect('cc'+code.toLowerCase());
