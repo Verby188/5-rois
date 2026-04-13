@@ -405,6 +405,7 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
     <div class="waiting-list" id="w-list"></div>
     <button class="gbtn" id="w-start-btn" style="max-width:320px;display:none" onclick="hostStart()">Démarrer la partie !</button>
     <div class="conn-err" id="w-err" style="display:none"></div>
+    <button id="w-retry-btn" style="display:none;padding:.55rem 1.4rem;border:1px solid rgba(200,160,0,.4);border-radius:8px;background:rgba(200,160,0,.1);color:var(--gold2);font-family:Cinzel,serif;font-size:.8rem;cursor:pointer" onclick="retryConnect()">Réessayer →</button>
     <button class="back-btn" onclick="abortNet()">← Annuler</button>
   </div>
 </div>
@@ -604,8 +605,28 @@ function doCreate(){
   NET._hostName=name;
   updateWaitingList();
   try{
-    NET.peer=new Peer('cc'+code.toLowerCase());
-    NET.peer.on('error',e=>{showWErr('Erreur PeerJS: '+e.type+'. Vérifiez votre connexion.');});
+    NET.peer=new Peer('cc'+code.toLowerCase(),{
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun.stunprotocol.org:3478' },
+          ]
+        },
+        debug: 0
+      });
+    NET.peer.on('error',e=>{
+      const tips={
+        'network':'Impossible de joindre le serveur de connexion. Vérifiez votre Wi-Fi/4G.',
+        'unavailable-id':'Ce code est déjà utilisé. Recréez une partie.',
+        'peer-unavailable':'Joueur introuvable. Vérifiez le code.',
+        'server-error':'Serveur PeerJS indisponible. Réessayez dans quelques secondes.',
+        'ssl-unavailable':'Erreur SSL. Essayez avec une connexion différente.',
+        'disconnected':'Connexion perdue. Vérifiez votre réseau.'
+      };
+      showWErr(tips[e.type]||'Erreur réseau ('+e.type+'). Vérifiez votre connexion.');
+    });
     NET.peer.on('connection',conn=>{onGuestConnect(conn);});
     NET.peer.on('open',()=>{document.getElementById('w-msg').textContent='En attente des joueurs…';updateWaitingList();});
   }catch(e){showWErr('PeerJS non disponible. Vérifiez votre connexion internet.');}
@@ -690,12 +711,22 @@ function doJoin(){
   document.getElementById('w-start-btn').style.display='none';
   document.getElementById('w-list').innerHTML='';
   try{
-    NET.peer=new Peer();
+    NET.peer=new Peer({
+        config: {
+          iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            { urls: 'stun:stun1.l.google.com:19302' },
+            { urls: 'stun:stun2.l.google.com:19302' },
+            { urls: 'stun:stun.stunprotocol.org:3478' },
+          ]
+        },
+        debug: 0
+      });
     NET.peer.on('error',e=>{showWErr('Erreur: '+e.type);});
     NET.peer.on('open',()=>{
       const conn=NET.peer.connect('cc'+code.toLowerCase());
       NET.conns=[conn];
-      conn.on('error',()=>showWErr('Impossible de se connecter. Vérifiez le code.'));
+      conn.on('error',e=>{showWErr('Impossible de rejoindre la partie. Vérifiez le code et que le Wi-Fi/4G est actif.');});
       conn.on('open',()=>{
         conn.send({t:'setname',name});
         document.getElementById('w-msg').textContent='Connecté ! En attente du démarrage…';
@@ -773,7 +804,19 @@ function abortNet(){
 }
 
 function showNetErr(msg){const e=document.getElementById('net-err');e.textContent=msg;e.style.display='block'}
-function showWErr(msg){const e=document.getElementById('w-err');e.textContent=msg;e.style.display='block';document.getElementById('w-msg').textContent='Erreur de connexion.'}
+function showWErr(msg){
+  const e=document.getElementById('w-err');e.textContent=msg;e.style.display='block';
+  document.getElementById('w-msg').textContent='Erreur de connexion.';
+  const rb=document.getElementById('w-retry-btn');if(rb)rb.style.display='block';
+}
+function retryConnect(){
+  document.getElementById('w-err').style.display='none';
+  const rb=document.getElementById('w-retry-btn');if(rb)rb.style.display='none';
+  if(NET.peer)try{NET.peer.destroy()}catch(e){}
+  NET.peer=null;
+  if(NET.mode==='host') doCreate();
+  else doJoin();
+}
 
 // ═══════════════════════════════════════════
 // GAME STATE
