@@ -85,7 +85,18 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 .btn-outline{padding:.7rem;border:2px solid rgba(200,160,0,.35);border-radius:9px;
              background:rgba(200,160,0,.08);color:var(--gold2);font-family:'Cinzel',serif;
              font-size:.85rem;cursor:pointer;letter-spacing:.1em;transition:.2s;width:100%}
-.btn-outline:hover{background:rgba(200,160,0,.18);border-color:var(--gold)}
+.btn-outline:hover:not(:disabled){background:rgba(200,160,0,.18);border-color:var(--gold)}
+.btn-outline:disabled{opacity:.35;cursor:not-allowed}
+.btn-sms{padding:.7rem;border:2px solid rgba(76,175,80,.4);border-radius:9px;
+         background:rgba(76,175,80,.1);color:#a5d6a7;font-family:'Cinzel',serif;
+         font-size:.82rem;cursor:pointer;letter-spacing:.08em;transition:.2s;width:100%;
+         display:flex;align-items:center;justify-content:center;gap:.5rem}
+.btn-sms:hover{background:rgba(76,175,80,.2);border-color:#66bb6a}
+.code-detected{background:rgba(67,160,71,.15);border:1px solid rgba(67,160,71,.4);
+               border-radius:8px;padding:.55rem .9rem;font-size:.78rem;color:#a5d6a7;
+               display:flex;align-items:center;gap:.5rem;cursor:pointer;transition:.15s}
+.code-detected:hover{background:rgba(67,160,71,.25)}
+.rc-share-row{display:flex;gap:.6rem;margin-top:.5rem;flex-wrap:wrap}
 
 /* ══ WAITING ROOM ══ */
 #s-waiting{justify-content:center;gap:1.5rem;padding:2rem 1rem}
@@ -364,8 +375,9 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
       <div class="net-section">
         <div class="slbl">Rejoindre une partie</div>
         <input class="name-input" id="join-name" placeholder="Ton nom" maxlength="14" value="Joueur 2">
-        <input class="code-input" id="join-code" placeholder="CODE" maxlength="6" oninput="this.value=this.value.toUpperCase()">
-        <button class="btn-outline" onclick="doJoin()">Rejoindre →</button>
+        <div id="code-detected-box" style="display:none"></div>
+        <input class="code-input" id="join-code" placeholder="CODE" maxlength="6" oninput="this.value=this.value.toUpperCase();checkCodeInput()">
+        <button class="btn-outline" id="join-btn" onclick="doJoin()" disabled>Rejoindre →</button>
       </div>
       <div class="conn-err" id="net-err" style="display:none"></div>
     </div>
@@ -380,6 +392,14 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
       <div class="rc-lbl">Code de la partie</div>
       <div class="rc-code" id="w-code"></div>
       <div class="rc-hint">Partage ce code avec les autres joueurs</div>
+      <div class="rc-share-row">
+        <button class="btn-sms" onclick="sendSMSInvite()" style="flex:1">
+          <span>💬</span><span>Inviter par SMS</span>
+        </button>
+        <button class="btn-sms" onclick="copyInviteLink()" style="flex:1;border-color:rgba(100,160,255,.4);color:#90caf9;background:rgba(66,165,245,.1)">
+          <span>📋</span><span>Copier le code</span>
+        </button>
+      </div>
     </div>
     <div class="waiting-msg" id="w-msg">Connexion en cours…</div>
     <div class="waiting-list" id="w-list"></div>
@@ -1455,6 +1475,7 @@ function tryReconnect(){
     }else{
       document.getElementById('join-name').value=saved.myName;
       document.getElementById('join-code').value=saved.roomCode;
+      checkCodeInput();
       show('s-net');
       clearSession();
       // Auto-try to join
@@ -1464,6 +1485,127 @@ function tryReconnect(){
   return true;
 }
 
+// ══ SMS INVITE & CODE DETECTION ══
+
+// Deep link scheme: cinqcouronnes://join/CODE
+// In the SMS we include the code clearly + the deep link for APK intercept
+const APP_SCHEME = 'cinqcouronnes';
+
+function buildInviteText(code){
+  const deep = `${APP_SCHEME}://join/${code}`;
+  return `🎴 Cinq Couronnes — Rejoins ma partie !%0ACode : ${code}%0A${deep}`;
+}
+
+function sendSMSInvite(){
+  const code = document.getElementById('w-code').textContent.trim();
+  if(!code) return;
+  const body = buildInviteText(code);
+  // Android & iOS both support sms: URI
+  window.location.href = `sms:?body=${body}`;
+}
+
+function copyInviteLink(){
+  const code = document.getElementById('w-code').textContent.trim();
+  if(!code) return;
+  const text = `Cinq Couronnes — Code : ${code}`;
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(()=>{
+      const btn = event.currentTarget;
+      const orig = btn.innerHTML;
+      btn.innerHTML = '<span>✅</span><span>Copié !</span>';
+      setTimeout(()=>{btn.innerHTML=orig},1500);
+    }).catch(()=>_legacyCopy(text));
+  }else _legacyCopy(text);
+}
+
+function _legacyCopy(text){
+  const ta=document.createElement('textarea');ta.value=text;
+  ta.style.cssText='position:fixed;opacity:0;top:0;left:0';
+  document.body.appendChild(ta);ta.select();
+  try{document.execCommand('copy')}catch(e){}
+  document.body.removeChild(ta);
+}
+
+// Check join-code input length → enable/disable join button
+function checkCodeInput(){
+  const v = document.getElementById('join-code').value.trim();
+  const btn = document.getElementById('join-btn');
+  if(btn) btn.disabled = v.length !== 6;
+}
+
+// Try to read clipboard for a code when join section is visible
+async function tryPasteCode(){
+  try{
+    const text = await navigator.clipboard.readText();
+    const match = text.match(/\b([A-Z]{6})\b/);
+    if(!match) return;
+    const code = match[1];
+    const box = document.getElementById('code-detected-box');
+    const inp = document.getElementById('join-code');
+    if(!box||!inp||inp.value.length===6) return;
+    box.style.display='flex';
+    box.className='code-detected';
+    box.innerHTML=`<span>📋</span><span>Code détecté : <b>${code}</b> — Appuie pour l'utiliser</span>`;
+    box.onclick=()=>{
+      inp.value=code;
+      checkCodeInput();
+      box.style.display='none';
+    };
+  }catch(e){/* clipboard not available or denied */}
+}
+
+// Deep link handler: cinqcouronnes://join/CODE
+// Capacitor/WebView passes this via window location or custom event
+function handleDeepLink(url){
+  try{
+    const m = url.match(new RegExp(`${APP_SCHEME}://join/([A-Za-z]{6})`));
+    if(!m) return;
+    const code = m[1].toUpperCase();
+    // Navigate to join screen and pre-fill
+    show('s-net');
+    const inp = document.getElementById('join-code');
+    if(inp){ inp.value=code; checkCodeInput(); }
+    // Show notification
+    const box = document.getElementById('code-detected-box');
+    if(box){
+      box.style.display='flex';
+      box.className='code-detected';
+      box.innerHTML=`<span>🎴</span><span>Invitation reçue — Code : <b>${code}</b></span>`;
+      box.onclick=null;
+    }
+  }catch(e){}
+}
+
+// Check URL hash on load (e.g. file:///...#join-XXXXXX)
+function checkHashCode(){
+  const h = window.location.hash;
+  if(!h) return;
+  const m = h.match(/join[-:]?([A-Za-z]{6})/i);
+  if(!m) return;
+  handleDeepLink(`${APP_SCHEME}://join/${m[1]}`);
+}
+
+// Listen for Capacitor deep link plugin (if available)
+if(window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.App){
+  window.Capacitor.Plugins.App.addListener('appUrlOpen', data=>{
+    if(data && data.url) handleDeepLink(data.url);
+  });
+}
+
+// Also expose globally for WebView bridge
+window.handleDeepLink = handleDeepLink;
+
+// Show clipboard detection when s-net becomes visible
+const _origShow = show;
+window.show = function(id){
+  _origShow(id);
+  if(id==='s-net'){
+    setTimeout(tryPasteCode, 300);
+    // reset join button state
+    checkCodeInput();
+  }
+};
+
 // Init
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('cover').classList.remove('on');
@@ -1471,6 +1613,10 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('popup').classList.remove('on');
   // Check for previous session
   setTimeout(tryReconnect,600);
+  // Check URL hash for deep link (e.g. from SMS)
+  checkHashCode();
+  // Enable/disable join button on load
+  checkCodeInput();
 });
 </script>
 </body>
