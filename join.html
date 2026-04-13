@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cinq Couronnes — Rejoindre une partie</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;
+     background:linear-gradient(160deg,#061a0c,#0a2e14);font-family:Georgia,serif;color:#fff;padding:2rem;text-align:center;gap:1.5rem}
+.crown{font-size:3rem;animation:float 2s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+h1{font-size:1.8rem;color:#f0c830;text-shadow:0 0 20px rgba(200,160,0,.4);letter-spacing:.05em}
+.code-box{background:rgba(0,0,0,.4);border:2px solid rgba(200,160,0,.4);border-radius:14px;padding:1.2rem 2rem}
+.code-lbl{font-size:.75rem;color:rgba(255,255,255,.45);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.4rem}
+.code{font-size:2.5rem;color:#f0c830;letter-spacing:.4em;font-weight:bold}
+.msg{font-size:.9rem;color:rgba(255,255,255,.55);line-height:1.6;max-width:300px}
+.btn{padding:.9rem 2rem;background:linear-gradient(135deg,#c8a000,#f0c830);border:none;border-radius:50px;
+     font-size:1rem;color:#0a0a0a;cursor:pointer;letter-spacing:.1em;font-family:Georgia,serif;
+     text-decoration:none;display:inline-block;margin-top:.5rem}
+.err{color:#ef9a9a;font-size:.85rem;display:none}
+</style>
+</head>
+<body>
+<div class="crown">👑</div>
+<h1>Cinq Couronnes</h1>
+<div class="code-box">
+  <div class="code-lbl">Code de la partie</div>
+  <div class="code" id="code">------</div>
+</div>
+<p class="msg" id="msg">Ouverture de l'application…</p>
+<p class="err" id="err">L'application ne semble pas installée.<br>Ouvre l'app manuellement et entre le code.</p>
+<a class="btn" id="open-btn" style="display:none" href="#">Ouvrir l'app</a>
+
+<script>
+const params = new URLSearchParams(location.search);
+const code = (params.get('code') || '').toUpperCase();
+
+if(code && /^[A-Z]{6}$/.test(code)){
+  document.getElementById('code').textContent = code;
+  const deepLink = 'cinqcouronnes://join/' + code;
+  document.getElementById('open-btn').href = deepLink;
+
+  // Tentative de redirection automatique
+  let redirected = false;
+  window.addEventListener('blur', () => { redirected = true; }); // l'app a pris le focus
+
+  setTimeout(() => {
+    window.location.href = deepLink;
+  }, 600);
+
+  // Si toujours sur cette page apres 2s → l'app n'est pas installee
+  setTimeout(() => {
+    if(!redirected){
+      document.getElementById('msg').style.display = 'none';
+      document.getElementById('err').style.display = 'block';
+      document.getElementById('open-btn').style.display = 'inline-block';
+    }
+  }, 2200);
+} else {
+  document.getElementById('code').textContent = '?';
+  document.getElementById('msg').textContent = 'Lien invalide. Demande un nouveau code.';
+}
+</script>
+</body>
+</html>
