@@ -1,18 +1,22 @@
 package com.cinqrois
 
 import android.annotation.SuppressLint
-import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
 import android.webkit.*
 import android.widget.FrameLayout
+import android.widget.LinearLayout
 import androidx.appcompat.app.AppCompatActivity
+import com.google.android.gms.ads.AdRequest
+import com.google.android.gms.ads.AdSize
+import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.MobileAds
 
 class MainActivity : AppCompatActivity() {
+
     private lateinit var webView: WebView
-    private var webViewReady = false
-    private var pendingDeepLink: String? = null
+    private lateinit var adView: AdView
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -31,14 +35,42 @@ class MainActivity : AppCompatActivity() {
             or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         )
 
-        webView = WebView(this).apply {
+        // Initialiser AdMob
+        MobileAds.initialize(this)
+
+        // Layout principal vertical
+        val layout = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
             layoutParams = FrameLayout.LayoutParams(
                 FrameLayout.LayoutParams.MATCH_PARENT,
                 FrameLayout.LayoutParams.MATCH_PARENT
             )
         }
-        setContentView(webView)
 
+        // WebView
+        webView = WebView(this).apply {
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                0,
+                1f
+            )
+        }
+
+        // Bannière AdMob
+        adView = AdView(this).apply {
+            adUnitId = "ca-app-pub-6145497382360748/7978022975"
+            setAdSize(AdSize.BANNER)
+            layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+        }
+
+        layout.addView(webView)
+        layout.addView(adView)
+        setContentView(layout)
+
+        // Configuration WebView
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -47,6 +79,8 @@ class MainActivity : AppCompatActivity() {
             mediaPlaybackRequiresUserGesture = false
             cacheMode = WebSettings.LOAD_DEFAULT
             setSupportZoom(false)
+            displayZoomControls = false
+            builtInZoomControls = false
             useWideViewPort = true
             loadWithOverviewMode = true
         }
@@ -56,64 +90,20 @@ class MainActivity : AppCompatActivity() {
                 request.grant(request.resources)
             }
         }
-
-        webView.webViewClient = object : WebViewClient() {
-
-            override fun onPageFinished(view: WebView?, url: String?) {
-                super.onPageFinished(view, url)
-                webViewReady = true
-                pendingDeepLink?.let { link ->
-                    dispatchDeepLink(link)
-                    pendingDeepLink = null
-                }
-            }
-
-            override fun shouldOverrideUrlLoading(
-                view: WebView?,
-                request: WebResourceRequest?
-            ): Boolean {
-                val uri = request?.url ?: return false
-                return when (uri.scheme) {
-                    "http", "https", "file" -> false
-                    "sms", "smsto", "tel", "mailto" -> {
-                        try { startActivity(Intent(Intent.ACTION_VIEW, uri)) } catch (e: Exception) {}
-                        true
-                    }
-                    "cinqcouronnes" -> {
-                        dispatchDeepLink(uri.toString())
-                        true
-                    }
-                    else -> false
-                }
-            }
-        }
-
+        webView.webViewClient = WebViewClient()
         webView.loadUrl("file:///android_asset/index.html")
-        handleIntent(intent)
-    }
 
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        intent?.let { handleIntent(it) }
-    }
-
-    private fun handleIntent(intent: Intent) {
-        val data = intent.data ?: return
-        if (data.scheme == "cinqcouronnes") {
-            if (webViewReady) dispatchDeepLink(data.toString())
-            else pendingDeepLink = data.toString()
-        }
-    }
-
-    private fun dispatchDeepLink(url: String) {
-        val escaped = url.replace("'", "\\'")
-        webView.evaluateJavascript("window.handleDeepLink('$escaped');", null)
+        // Charger la pub
+        val adRequest = AdRequest.Builder().build()
+        adView.loadAd(adRequest)
     }
 
     override fun onBackPressed() {
-        if (webView.canGoBack()) webView.goBack() else super.onBackPressed()
+        if (webView.canGoBack()) webView.goBack()
+        else super.onBackPressed()
     }
 
-    override fun onResume() { super.onResume(); webView.onResume() }
-    override fun onPause() { super.onPause(); webView.onPause() }
+    override fun onResume() { super.onResume(); webView.onResume(); adView.resume() }
+    override fun onPause() { super.onPause(); webView.onPause(); adView.pause() }
+    override fun onDestroy() { super.onDestroy(); adView.destroy() }
 }
