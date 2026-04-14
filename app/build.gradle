@@ -4,11 +4,11 @@ plugins {
 }
 
 android {
-    namespace 'com.cinqrois'
+    namespace 'com.verby188.cinqrois'
     compileSdk 34
 
     defaultConfig {
-        applicationId "com.cinqrois"
+        applicationId "com.verby188.cinqrois"
         minSdk 24
         targetSdk 34
         versionCode 1
