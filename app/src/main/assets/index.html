@@ -333,8 +333,87 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
       <span class="lbtn-icon">📡</span>
       <div><div>Multijoueur en ligne</div><div class="lbtn-sub">Chaque joueur sur son propre appareil</div></div>
     </button>
+    <button class="lbtn" onclick="show('s-rules')">
+      <span class="lbtn-icon">📖</span>
+      <div><div>Règles du jeu</div><div class="lbtn-sub">Suites, familles, Bonus et stratégies</div></div>
+    </button>
   </div>
   <div class="rules-hint">11 manches · Bonus change chaque manche · Plus bas score gagne</div>
+</div>
+
+<!-- ══ RÈGLES ══ -->
+<div id="s-rules" class="scr" style="justify-content:flex-start;padding:1.5rem 1rem;overflow-y:auto;gap:0">
+  <div style="width:100%;max-width:480px;margin:0 auto">
+    <button class="back-btn" onclick="show('s-lobby')" style="margin-bottom:1.2rem">← Retour</button>
+    <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.4rem;text-align:center;margin-bottom:1.5rem">📖 Règles du jeu</h2>
+
+    <div style="display:flex;flex-direction:column;gap:1rem">
+
+      <div class="scard">
+        <div class="slbl">🎯 Objectif</div>
+        <p style="margin:0;font-size:.9rem;line-height:1.7">Obtenir le score le plus bas après 11 manches. Formez des <strong style="color:var(--gold)">suites</strong> et des <strong style="color:var(--gold)">familles</strong> pour minimiser vos points de pénalité.</p>
+      </div>
+
+      <div class="scard">
+        <div class="slbl">🃏 Le plateau</div>
+        <p style="margin:0;font-size:.9rem;line-height:1.7">116 cartes (2 jeux de 58) en 5 couleurs : ⭐ Étoiles, ♥ Cœurs, ♣ Trèfles, ♠ Piques, ♦ Carreaux. Chaque couleur a 11 cartes (3 à 10, J, Q, K) + 6 Jokers.</p>
+      </div>
+
+      <div class="scard">
+        <div class="slbl">💰 Valeur des cartes</div>
+        <div style="font-size:.9rem;line-height:2">
+          <div style="display:flex;justify-content:space-between"><span>3 à 10</span><span style="color:var(--gold)">Valeur faciale</span></div>
+          <div style="display:flex;justify-content:space-between"><span>Valet (J)</span><span style="color:var(--gold)">11 pts</span></div>
+          <div style="display:flex;justify-content:space-between"><span>Dame (Q)</span><span style="color:var(--gold)">12 pts</span></div>
+          <div style="display:flex;justify-content:space-between"><span>Roi (K)</span><span style="color:var(--gold)">13 pts</span></div>
+          <div style="display:flex;justify-content:space-between"><span>Joker</span><span style="color:#e53935">50 pts</span></div>
+          <div style="display:flex;justify-content:space-between"><span>Carte Bonus</span><span style="color:#4caf50">20 pts (wildcard !)</span></div>
+        </div>
+      </div>
+
+      <div class="scard">
+        <div class="slbl">⭐ La carte Bonus</div>
+        <p style="margin:0;font-size:.9rem;line-height:1.7">La carte Bonus change à chaque manche : c'est la carte dont la valeur = nombre de cartes distribuées. Manche 3 → les 3 sont Bonus. Manche 13 → les Rois sont Bonus. Elle remplace n'importe quelle carte dans une combinaison !</p>
+      </div>
+
+      <div class="scard">
+        <div class="slbl">🔗 Suites</div>
+        <p style="margin:0;font-size:.9rem;line-height:1.7">3 cartes ou plus de la <strong style="color:var(--gold)">même couleur</strong> en séquence.<br>Ex : 5♣ 6♣ 7♣ ou 9⭐ 10⭐ J⭐ Q⭐<br>Les Jokers et Bonus remplacent n'importe quelle carte.</p>
+      </div>
+
+      <div class="scard">
+        <div class="slbl">👨‍👩‍👧 Familles</div>
+        <p style="margin:0;font-size:.9rem;line-height:1.7">3 cartes ou plus de la <strong style="color:var(--gold)">même valeur</strong>, quelle que soit la couleur.<br>Ex : 8♣ 8⭐ 8♠ ou K♣ K♥ K♦ K⭐<br>Les Jokers et Bonus remplacent n'importe quelle carte.</p>
+      </div>
+
+      <div class="scard">
+        <div class="slbl">▶️ Déroulement d'un tour</div>
+        <ol style="margin:0;padding-left:1.2rem;font-size:.9rem;line-height:2">
+          <li>Piochez 1 carte (pioche ou défausse)</li>
+          <li>Organisez vos cartes en suites/familles</li>
+          <li>Défaussez 1 carte</li>
+          <li>Si toutes vos cartes forment des combinaisons → <strong style="color:var(--gold)">Exposez !</strong></li>
+        </ol>
+      </div>
+
+      <div class="scard">
+        <div class="slbl">🏁 Exposer</div>
+        <p style="margin:0;font-size:.9rem;line-height:1.7">Quand vous pouvez organiser <strong style="color:var(--gold)">toutes</strong> vos cartes en suites/familles (en gardant une à défausser), étalez vos combinaisons. Les autres joueurs ont encore <strong style="color:var(--gold)">un dernier tour</strong> pour optimiser leur main. Seules les cartes restantes en main comptent comme pénalités.</p>
+      </div>
+
+      <div class="scard">
+        <div class="slbl">💡 Conseils</div>
+        <ul style="margin:0;padding-left:1.2rem;font-size:.9rem;line-height:2">
+          <li>Gardez un œil sur la carte Bonus du tour</li>
+          <li>Méfiez-vous des Jokers (50 pts si non combinés !)</li>
+          <li>Si un Joker est défaussé, seul le joueur suivant peut le prendre</li>
+          <li><em style="color:var(--gold)">"La partie n'est pas perdue tant que les Rois ne sont pas le Bonus"</em></li>
+        </ul>
+      </div>
+
+    </div>
+    <div style="height:2rem"></div>
+  </div>
 </div>
 
 <!-- ══ LOCAL SETUP ══ -->
@@ -470,7 +549,7 @@ const PCOLORS=['#f0c830','#ef5350','#42a5f5','#66bb6a','#ab47bc','#ff7043','#26c
 const pc=i=>PCOLORS[i%PCOLORS.length];
 function dv(v){return{11:'V',12:'D',13:'R'}[v]||String(v)}
 function show(id){
-  ['s-lobby','s-local','s-net','s-waiting','game','endscreen'].forEach(s=>{
+  ['s-lobby','s-local','s-net','s-waiting','game','endscreen','s-rules'].forEach(s=>{
     const el=document.getElementById(s);
     if(!el)return;
     el.classList.toggle('on',s===id);
