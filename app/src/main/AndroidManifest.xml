@@ -15,7 +15,7 @@
             android:value="ca-app-pub-6145497382360748~6379655836"/>
 
         <activity
-            android:name="com.cinqrois.MainActivity"
+            android:name="com.verby188.cinqrois.MainActivity"
             android:exported="true"
             android:configChanges="orientation|screenSize|keyboardHidden"
             android:screenOrientation="portrait"
