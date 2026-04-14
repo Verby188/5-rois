@@ -10,6 +10,10 @@
         android:theme="@style/Theme.U9"
         android:usesCleartextTraffic="true">
 
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-6145497382360748~6379655836"/>
+
         <activity
             android:name="com.cinqrois.MainActivity"
             android:exported="true"
@@ -19,12 +23,6 @@
             <intent-filter>
                 <action android:name="android.intent.action.MAIN"/>
                 <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="cinqcouronnes" />
             </intent-filter>
         </activity>
 
