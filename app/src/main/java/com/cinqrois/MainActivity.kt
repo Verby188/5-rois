@@ -1,4 +1,4 @@
-package com.cinqrois
+package com.verby188.cinqrois
 
 import android.annotation.SuppressLint
 import android.os.Bundle
