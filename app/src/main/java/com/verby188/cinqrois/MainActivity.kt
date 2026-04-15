@@ -1,6 +1,8 @@
 package com.verby188.cinqrois
 
 import android.annotation.SuppressLint
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
@@ -35,10 +37,8 @@ class MainActivity : AppCompatActivity() {
             or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         )
 
-        // Initialiser AdMob
         MobileAds.initialize(this)
 
-        // Layout principal vertical
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
             layoutParams = FrameLayout.LayoutParams(
@@ -47,7 +47,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // WebView
         webView = WebView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
@@ -56,7 +55,6 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-        // Bannière AdMob
         adView = AdView(this).apply {
             adUnitId = "ca-app-pub-6145497382360748/7978022975"
             setAdSize(AdSize.BANNER)
@@ -70,7 +68,6 @@ class MainActivity : AppCompatActivity() {
         layout.addView(adView)
         setContentView(layout)
 
-        // Configuration WebView
         webView.settings.apply {
             javaScriptEnabled = true
             domStorageEnabled = true
@@ -90,10 +87,33 @@ class MainActivity : AppCompatActivity() {
                 request.grant(request.resources)
             }
         }
-        webView.webViewClient = WebViewClient()
+
+        webView.webViewClient = object : WebViewClient() {
+            override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
+                val url = request.url.toString()
+                return when {
+                    url.startsWith("sms:") || url.startsWith("smsto:") -> {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
+                        true
+                    }
+                    url.startsWith("tel:") -> {
+                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse(url))
+                        startActivity(intent)
+                        true
+                    }
+                    url.startsWith("mailto:") -> {
+                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+                        startActivity(intent)
+                        true
+                    }
+                    else -> false
+                }
+            }
+        }
+
         webView.loadUrl("file:///android_asset/index.html")
 
-        // Charger la pub
         val adRequest = AdRequest.Builder().build()
         adView.loadAd(adRequest)
     }
