@@ -7,19 +7,6 @@
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet">
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCPVnGohf_etSJYIFCSnWxjIB2RPX5rmnU",
-  authDomain: "u9-game.firebaseapp.com",
-  databaseURL: "https://u9-game-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "u9-game",
-  storageBucket: "u9-game.firebasestorage.app",
-  messagingSenderId: "1063280643089",
-  appId: "1:1063280643089:web:209c246dbbfaa8772cb5b0"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--felt:#0c3d1e;--gold:#c8a000;--gold2:#f0c830;--white:#fafaf5;--sh:rgba(0,0,0,.45)}
@@ -697,7 +684,7 @@ function doCreate(){
 
 function _createRoomWithNewCode(){
   const code=generateCode();
-  const roomRef=db.ref('cinqrois_rooms/'+code);
+  const roomRef=window.db.ref('cinqrois_rooms/'+code);
   roomRef.once('value').then(snap=>{
     if(snap.exists()){
       // Code taken, try another
@@ -725,7 +712,7 @@ function _createRoomWithNewCode(){
       updateWaitingList();
       checkCanStart();
       // Send welcome
-      db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+gIdx).set({
+      window.db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+gIdx).set({
         t:'welcome',playerIdx:gIdx,expectedHumans:NET.expectedHumans,numAI:NET.numAI
       });
     });
@@ -793,7 +780,7 @@ function doJoin(){
   document.getElementById('w-start-btn').style.display='none';
   document.getElementById('w-list').innerHTML='';
   const name=document.getElementById('join-name').value.trim()||'Invité';
-  const roomRef=db.ref('cinqrois_rooms/'+code);
+  const roomRef=window.db.ref('cinqrois_rooms/'+code);
   roomRef.once('value').then(snap=>{
     if(!snap.exists()){showWErr('Code introuvable. Vérifiez le code.');return;}
     const room=snap.val();
@@ -849,13 +836,13 @@ function doJoin(){
 
 function gsend(msg){
   if(NET.mode!=='guest'||!NET.roomCode)return;
-  db.ref('cinqrois_rooms/'+NET.roomCode+'/actions').push({...msg,playerIdx:NET.myIdx});
+  window.db.ref('cinqrois_rooms/'+NET.roomCode+'/actions').push({...msg,playerIdx:NET.myIdx});
 }
 
 function broadcast(){
   if(NET.mode!=='host'||!G||!NET.roomCode)return;
   for(let gi=1;gi<NET.expectedHumans;gi++){
-    db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+gi).set(buildPkt(gi));
+    window.db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+gi).set(buildPkt(gi));
   }
 }
 
@@ -1158,7 +1145,7 @@ function applyAction(msg,guestIdx){
   const bv=getBV();
   const p=G.players[guestIdx];
   if(msg.action==='resync'){
-    db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+guestIdx).set(buildPkt(guestIdx));
+    window.db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+guestIdx).set(buildPkt(guestIdx));
     return;
   }
   if(msg.action==='drawDeck'){
@@ -1183,7 +1170,7 @@ function applyAction(msg,guestIdx){
     const av=gc.length>0&&gc.every(g=>vMeld(g,bv));
     let fm;
     if(av&&rest.filter(c=>!new Set(mgs.flat()).has(c.id)).length===0){fm=gc;}
-    else{fm=partMelds(rest,bv);if(!fm){db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+guestIdx).set({t:'error',msg:'Impossible d\'abattre ! Vérifiez vos combinaisons.'});return;}}
+    else{fm=partMelds(rest,bv);if(!fm){window.db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+guestIdx).set({t:'error',msg:'Impossible d\'abattre ! Vérifiez vos combinaisons.'});return;}}
     p.hand=[];G.discard.push(disc);G.goingOut=G.cur;G.lastTurns.add(G.cur);p.roundScore=0;
     G.exposedMelds=fm;G.exposedBy=G.cur;flashMelds(fm,bv);setMsg(`${p.name} ABAT ! 🎉 Les autres ont un dernier tour.`,'success');
     render();broadcast();setTimeout(()=>{advance();setTimeout(broadcast,300);},800);
@@ -1759,6 +1746,27 @@ window.addEventListener('DOMContentLoaded',()=>{
   // Enable/disable join button on load
   checkCodeInput();
 });
+</script>
+<script>
+(function initFirebase(){
+  if(typeof firebase === 'undefined'){
+    setTimeout(initFirebase, 200);
+    return;
+  }
+  if(!firebase.apps.length){
+    firebase.initializeApp({
+      apiKey: "AIzaSyCPVnGohf_etSJYIFCSnWxjIB2RPX5rmnU",
+      authDomain: "u9-game.firebaseapp.com",
+      databaseURL: "https://u9-game-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "u9-game",
+      storageBucket: "u9-game.firebasestorage.app",
+      messagingSenderId: "1063280643089",
+      appId: "1:1063280643089:web:209c246dbbfaa8772cb5b0"
+    });
+  }
+  window.db = firebase.database();
+  console.log('Firebase OK');
+})();
 </script>
 </body>
 </html>
