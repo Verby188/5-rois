@@ -670,23 +670,18 @@ function setBadge(){
 }
 
 // ─ CREATE ─
-function _retryWithNewCode(){
-  const code=generateCode();
-  NET.roomCode=code;
-  document.getElementById('w-code-box').style.display='none';
-  document.getElementById('w-msg').textContent='Création de la salle...';
-  _connectWithRetry('cc'+code.toLowerCase(), true);
-}
-
 function doCreate(){
   const name=document.getElementById('host-name').value.trim()||'Hote';
-  NET.mode='host';NET.expectedHumans=NET_EXP;NET.numAI=NET_AI;NET.conns=[];
-  NET._hostName=name;
+  const code=generateCode();
+  NET.roomCode=code;NET.mode='host';NET.expectedHumans=NET_EXP;NET.numAI=NET_AI;NET.conns=[];
   show('s-waiting');
-  document.getElementById('w-code-box').style.display='none';
-  document.getElementById('w-msg').textContent='Création de la salle...';
+  document.getElementById('w-code-box').style.display='flex';
+  document.getElementById('w-code').textContent=code;
+  document.getElementById('w-msg').textContent='En attente des joueurs...';
   document.getElementById('w-err').style.display='none';
-  _retryWithNewCode();
+  NET._hostName=name;
+  updateWaitingList();
+  _connectWithRetry('cc'+code.toLowerCase(), true);
 }
 
 const PEER_CFG = {
@@ -723,13 +718,9 @@ function _connectWithRetry(peerId, isHost, attempt){
           setTimeout(()=>_connectWithRetry(peerId, isHost, attempt+1), delay);
           return;
         }
-        if(e.type==='unavailable-id' && isHost){
-          // Code pris - en générer un nouveau et recommencer AVANT d'afficher
-          _retryWithNewCode();
-          return;
-        }
         const tips={
           'network':'Impossible de joindre le serveur. Verifiez votre Wi-Fi/4G.',
+          'unavailable-id':'Ce code est deja utilise. Recreez une partie.',
           'peer-unavailable':'Joueur introuvable. Verifiez le code.',
           'server-error':'Serveur indisponible. Reessayez.',
           'disconnected':'Connexion perdue. Verifiez votre reseau.'
@@ -739,9 +730,6 @@ function _connectWithRetry(peerId, isHost, attempt){
       if(isHost){
         NET.peer.on('connection',conn=>{onGuestConnect(conn);});
         NET.peer.on('open',()=>{
-          // Afficher le code seulement maintenant qu'il est confirmé disponible
-          document.getElementById('w-code').textContent=NET.roomCode;
-          document.getElementById('w-code-box').style.display='flex';
           document.getElementById('w-msg').textContent='En attente des joueurs...';
           updateWaitingList();
         });
@@ -862,6 +850,7 @@ function handleHostMsg(msg,myName){
     if(GS.cur===GS.myIdx){
       if(!wasGame||prevCur!==GS.myIdx){
         GSL.selCard=null;GSL.meldGroups=[];
+        if(msg.exposedMelds&&msg.exposedBy!=null&&msg.exposedBy!==msg.myIdx){const bvG=msg.bv;const mzEl=document.getElementById('mz');mzEl.style.display='flex';const mgEl=document.getElementById('mzgroups');mgEl.innerHTML='';document.getElementById('mztools').innerHTML='';msg.exposedMelds.forEach(meld=>{const row=document.createElement('div');row.className='mgr valid';const b=document.createElement('div');b.className='mgbdg valid';b.textContent='Combinaison';row.appendChild(b);meld.forEach(c=>{const el=mkGCEl(c,bvG,false);row.appendChild(el)});mgEl.appendChild(row)});}
         notifyMyTurn(GS.players[GS.myIdx].name,GS.players[GS.myIdx].color,
           GS.goingOut!==-1?'⚡ Dernier tour !':'Piochez une carte');
       }
@@ -898,6 +887,8 @@ function buildPkt(pi){
     msg:G.msg,msgType:G.msgType,
     myIdx:pi,
     myHand:G.players[pi].hand.map(c=>({...c})),
+    exposedMelds:G.exposedMelds||null,
+    exposedBy:G.exposedBy!=null?G.exposedBy:null,
     players:G.players.map(p=>({name:p.name,color:p.color,isHuman:p.isHuman,handCount:p.hand.length,roundScore:p.roundScore,totalScore:p.totalScore})),
     gameOver:G.phase==='game_over',
     finalScores:G.phase==='game_over'?G.players.map(p=>({name:p.name,color:p.color,totalScore:p.totalScore})):null,
@@ -951,9 +942,9 @@ function startGame(playersConfig){
 function startRound(){
   const deck=createDeck();shuffle(deck);
   G.deck=deck;G.discard=[];G.goingOut=-1;G.lastTurns=new Set();
-  G.selCard=null;G.meldGroups=[];G.sortBy=null;
+  G.selCard=null;G.meldGroups=[];G.sortBy=null;G.exposedMelds=null;G.exposedBy=null;
   const hs=G.round+2,bv=getBV();
-  for(const p of G.players){p.hand=G.deck.splice(0,hs);p.roundScore=0;}
+  const bvSort=getBV();for(const p of G.players){p.hand=G.deck.splice(0,hs);p.hand.sort((a,b)=>isWild(a,bvSort)!==isWild(b,bvSort)?(isWild(a,bvSort)?1:-1):a.val-b.val||(SORD[a.suit]-SORD[b.suit]));p.roundScore=0;}
   G.discard.push(G.deck.splice(0,1)[0]);
   G.cur=(G.round-1)%G.players.length;
   const starter=G.players[G.cur];
@@ -1152,7 +1143,7 @@ function humanGoOut(){
   if(av&&rest.filter(c=>!gIds.has(c.id)).length===0){fm=gc;}
   else{fm=partMelds(rest,bv);if(!fm){setMsg('Impossible d\'abattre ! Les cartes restantes ne forment pas des combinaisons.','alert');render();return;}}
   p.hand=[];G.discard.push(disc);G.goingOut=G.cur;G.lastTurns.add(G.cur);p.roundScore=0;
-  G.selCard=null;G.meldGroups=[];flashMelds(fm,bv);
+  G.selCard=null;G.meldGroups=[];G.exposedMelds=fm;G.exposedBy=G.cur;flashMelds(fm,bv);
   setMsg(`${p.name} ABAT ! 🎉 Les autres ont un dernier tour.`,'success');
   render();broadcast();setTimeout(advance,2200);
 }
@@ -1197,7 +1188,7 @@ function applyAction(msg,guestIdx){
     if(av&&rest.filter(c=>!new Set(mgs.flat()).has(c.id)).length===0){fm=gc;}
     else{fm=partMelds(rest,bv);if(!fm){NET.conns[guestIdx-1]&&NET.conns[guestIdx-1].send({t:'error',msg:'Impossible d\'abattre ! Vérifiez vos combinaisons.'});return;}}
     p.hand=[];G.discard.push(disc);G.goingOut=G.cur;G.lastTurns.add(G.cur);p.roundScore=0;
-    flashMelds(fm,bv);setMsg(`${p.name} ABAT ! 🎉 Les autres ont un dernier tour.`,'success');
+    G.exposedMelds=fm;G.exposedBy=G.cur;flashMelds(fm,bv);setMsg(`${p.name} ABAT ! 🎉 Les autres ont un dernier tour.`,'success');
     render();broadcast();setTimeout(advance,2200);
   }
 }
