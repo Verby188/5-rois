@@ -850,7 +850,6 @@ function handleHostMsg(msg,myName){
     if(GS.cur===GS.myIdx){
       if(!wasGame||prevCur!==GS.myIdx){
         GSL.selCard=null;GSL.meldGroups=[];
-        if(msg.exposedMelds&&msg.exposedBy!=null&&msg.exposedBy!==msg.myIdx){const bvG=msg.bv;const mzEl=document.getElementById('mz');mzEl.style.display='flex';const mgEl=document.getElementById('mzgroups');mgEl.innerHTML='';document.getElementById('mztools').innerHTML='';msg.exposedMelds.forEach(meld=>{const row=document.createElement('div');row.className='mgr valid';const b=document.createElement('div');b.className='mgbdg valid';b.textContent='Combinaison';row.appendChild(b);meld.forEach(c=>{const el=mkGCEl(c,bvG,false);row.appendChild(el)});mgEl.appendChild(row)});}
         notifyMyTurn(GS.players[GS.myIdx].name,GS.players[GS.myIdx].color,
           GS.goingOut!==-1?'⚡ Dernier tour !':'Piochez une carte');
       }
@@ -887,8 +886,6 @@ function buildPkt(pi){
     msg:G.msg,msgType:G.msgType,
     myIdx:pi,
     myHand:G.players[pi].hand.map(c=>({...c})),
-    exposedMelds:G.exposedMelds||null,
-    exposedBy:G.exposedBy!=null?G.exposedBy:null,
     players:G.players.map(p=>({name:p.name,color:p.color,isHuman:p.isHuman,handCount:p.hand.length,roundScore:p.roundScore,totalScore:p.totalScore})),
     gameOver:G.phase==='game_over',
     finalScores:G.phase==='game_over'?G.players.map(p=>({name:p.name,color:p.color,totalScore:p.totalScore})):null,
@@ -942,9 +939,9 @@ function startGame(playersConfig){
 function startRound(){
   const deck=createDeck();shuffle(deck);
   G.deck=deck;G.discard=[];G.goingOut=-1;G.lastTurns=new Set();
-  G.selCard=null;G.meldGroups=[];G.sortBy=null;G.exposedMelds=null;G.exposedBy=null;
+  G.selCard=null;G.meldGroups=[];G.sortBy=null;
   const hs=G.round+2,bv=getBV();
-  const bvSort=getBV();for(const p of G.players){p.hand=G.deck.splice(0,hs);p.hand.sort((a,b)=>isWild(a,bvSort)!==isWild(b,bvSort)?(isWild(a,bvSort)?1:-1):a.val-b.val||(SORD[a.suit]-SORD[b.suit]));p.roundScore=0;}
+  for(const p of G.players){p.hand=G.deck.splice(0,hs);p.roundScore=0;}
   G.discard.push(G.deck.splice(0,1)[0]);
   G.cur=(G.round-1)%G.players.length;
   const starter=G.players[G.cur];
@@ -1143,9 +1140,9 @@ function humanGoOut(){
   if(av&&rest.filter(c=>!gIds.has(c.id)).length===0){fm=gc;}
   else{fm=partMelds(rest,bv);if(!fm){setMsg('Impossible d\'abattre ! Les cartes restantes ne forment pas des combinaisons.','alert');render();return;}}
   p.hand=[];G.discard.push(disc);G.goingOut=G.cur;G.lastTurns.add(G.cur);p.roundScore=0;
-  G.selCard=null;G.meldGroups=[];G.exposedMelds=fm;G.exposedBy=G.cur;flashMelds(fm,bv);
+  G.selCard=null;G.meldGroups=[];flashMelds(fm,bv);
   setMsg(`${p.name} ABAT ! 🎉 Les autres ont un dernier tour.`,'success');
-  render();broadcast();setTimeout(advance,2200);
+  render();broadcast();setTimeout(()=>{advance();setTimeout(broadcast,300);},800);
 }
 function checkGoOut(){
   if(!G.selCard||G.phase!=='act')return false;
@@ -1164,6 +1161,13 @@ function applyAction(msg,guestIdx){
   if(G.cur!==guestIdx)return;
   const bv=getBV();
   const p=G.players[guestIdx];
+  if(msg.action==='resync'){
+    // Guest demande une mise à jour de l'état
+    if(NET.conns[guestIdx-1]&&NET.conns[guestIdx-1].open){
+      NET.conns[guestIdx-1].send(buildPkt(guestIdx));
+    }
+    return;
+  }
   if(msg.action==='drawDeck'){
     if(G.phase!=='draw')return;
     const card=deckDraw();p.hand.push(card);G.phase='act';G.selCard=null;
@@ -1189,7 +1193,7 @@ function applyAction(msg,guestIdx){
     else{fm=partMelds(rest,bv);if(!fm){NET.conns[guestIdx-1]&&NET.conns[guestIdx-1].send({t:'error',msg:'Impossible d\'abattre ! Vérifiez vos combinaisons.'});return;}}
     p.hand=[];G.discard.push(disc);G.goingOut=G.cur;G.lastTurns.add(G.cur);p.roundScore=0;
     G.exposedMelds=fm;G.exposedBy=G.cur;flashMelds(fm,bv);setMsg(`${p.name} ABAT ! 🎉 Les autres ont un dernier tour.`,'success');
-    render();broadcast();setTimeout(advance,2200);
+    render();broadcast();setTimeout(()=>{advance();setTimeout(broadcast,300);},800);
   }
 }
 
@@ -1221,6 +1225,13 @@ function revealHand(){
 // GUEST ACTIONS
 // ═══════════════════════════════════════════
 function gsend(msg){if(NET.mode!=='guest'||!NET.conns[0]||!NET.conns[0].open)return;NET.conns[0].send({t:'action',...msg})}
+
+// Resync automatique au retour d'une autre app (ex: SMS)
+document.addEventListener('visibilitychange',()=>{
+  if(!document.hidden&&NET.mode==='guest'&&NET.conns[0]&&NET.conns[0].open){
+    gsend({action:'resync'});
+  }
+});
 function isGuestTurn(){return GS&&GS.cur===GS.myIdx&&GS.phase!=='round_end'&&!GS.gameOver}
 
 function guestOnDeckClick(){if(GS&&GS.phase==='draw'&&isGuestTurn())gsend({action:'drawDeck'})}
@@ -1514,6 +1525,7 @@ function renderGuest(){
   if(!myTurn){
     const h=document.createElement('span');h.style.cssText='color:rgba(255,255,255,.33);font-size:.76rem;font-style:italic';
     h.textContent=GS.phase==='ai_turn'?`⏳ L'IA joue…`:`⏳ En attente de ${GS.players[GS.cur]?.name||'…'}…`;ab.appendChild(h);
+    const rb=document.createElement('button');rb.className='btn';rb.style.cssText='font-size:.65rem;opacity:.4;margin-left:.5rem';rb.textContent='↺ Resync';rb.onclick=()=>gsend({action:'resync'});ab.appendChild(rb);
   }else if(GS.phase==='draw'){
     const h=document.createElement('span');h.style.cssText='color:rgba(255,255,255,.33);font-size:.76rem;font-style:italic';h.textContent='Clique la pioche ou la défausse';ab.appendChild(h);
   }else if(inAct){
