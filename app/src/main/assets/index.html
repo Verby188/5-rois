@@ -711,29 +711,35 @@ function _startHostPolling(){
   if(NET._poll)clearInterval(NET._poll);
   NET._poll=setInterval(async()=>{
     if(!NET.roomCode)return;
-    const guests=await fbGet('cinqrois_rooms/'+NET.roomCode+'/guests');
-    if(guests){
-      for(const [idx,g] of Object.entries(guests)){
-        const i=parseInt(idx);
-        if(!NET._guestNames[i]){
-          NET._guestNames[i]=g.name||('Joueur '+(i+1));
-          updateWaitingList();checkCanStart();
-          await fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+i,{t:'welcome',playerIdx:i,expectedHumans:NET.expectedHumans,numAI:NET.numAI});
+    try{
+      const guests=await fbGet('cinqrois_rooms/'+NET.roomCode+'/guests');
+      if(guests&&typeof guests==='object'){
+        for(const [idx,g] of Object.entries(guests)){
+          const i=parseInt(idx);
+          if(i>0&&!NET._guestNames[i]){
+            NET._guestNames[i]=(g&&g.name)||(('Joueur ')+(i+1));
+            updateWaitingList();
+            checkCanStart();
+            fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+i,{t:'welcome',playerIdx:i,expectedHumans:NET.expectedHumans,numAI:NET.numAI});
+          }
         }
       }
-    }
-    const actions=await fbGet('cinqrois_rooms/'+NET.roomCode+'/actions');
-    if(actions&&G){
-      for(const [key,msg] of Object.entries(actions)){
-        if(key===NET._lastAction)continue;
-        NET._lastAction=key;
-        await fbDel('cinqrois_rooms/'+NET.roomCode+'/actions/'+key);
-        const gIdx=msg.playerIdx;
-        if(G.cur!==gIdx)continue;
-        applyAction(msg,gIdx);
+      if(G){
+        const actions=await fbGet('cinqrois_rooms/'+NET.roomCode+'/actions');
+        if(actions&&typeof actions==='object'){
+          const processed=NET._processedActions||(NET._processedActions={});
+          for(const [key,msg] of Object.entries(actions)){
+            if(processed[key])continue;
+            processed[key]=true;
+            fbDel('cinqrois_rooms/'+NET.roomCode+'/actions/'+key);
+            const gIdx=msg.playerIdx;
+            if(G.cur!==gIdx)continue;
+            applyAction(msg,gIdx);
+          }
+        }
       }
-    }
-  },1500);
+    }catch(e){console.error('Poll error:',e);}
+  },800);
 }
 
 function updateWaitingList(){
@@ -853,6 +859,8 @@ function buildPkt(pi){
     msg:G.msg,msgType:G.msgType,
     myIdx:pi,
     myHand:G.players[pi].hand.map(function(c){return Object.assign({},c)}),
+    exposedMelds:G.exposedMelds||null,
+    exposedBy:G.exposedBy!=null?G.exposedBy:null,
     players:G.players.map(function(p){return{name:p.name,color:p.color,isHuman:p.isHuman,handCount:p.hand.length,roundScore:p.roundScore,totalScore:p.totalScore}}),
     gameOver:G.phase==='game_over',
     finalScores:G.phase==='game_over'?G.players.map(function(p){return{name:p.name,color:p.color,totalScore:p.totalScore}}):null,
@@ -909,9 +917,9 @@ function startGame(playersConfig){
 function startRound(){
   const deck=createDeck();shuffle(deck);
   G.deck=deck;G.discard=[];G.goingOut=-1;G.lastTurns=new Set();
-  G.selCard=null;G.meldGroups=[];G.sortBy=null;
+  G.selCard=null;G.meldGroups=[];G.sortBy=null;G.exposedMelds=null;G.exposedBy=null;
   const hs=G.round+2,bv=getBV();
-  for(const p of G.players){p.hand=G.deck.splice(0,hs);p.roundScore=0;}
+  for(const p of G.players){p.hand=G.deck.splice(0,hs);p.hand.sort((a,b)=>isWild(a,bv)!==isWild(b,bv)?(isWild(a,bv)?1:-1):a.val-b.val||(SORD[a.suit]-SORD[b.suit]));p.roundScore=0;}
   G.discard.push(G.deck.splice(0,1)[0]);
   G.cur=(G.round-1)%G.players.length;
   const starter=G.players[G.cur];
@@ -1110,7 +1118,7 @@ function humanGoOut(){
   if(av&&rest.filter(c=>!gIds.has(c.id)).length===0){fm=gc;}
   else{fm=partMelds(rest,bv);if(!fm){setMsg('Impossible d\'abattre ! Les cartes restantes ne forment pas des combinaisons.','alert');render();return;}}
   p.hand=[];G.discard.push(disc);G.goingOut=G.cur;G.lastTurns.add(G.cur);p.roundScore=0;
-  G.selCard=null;G.meldGroups=[];flashMelds(fm,bv);
+  G.selCard=null;G.meldGroups=[];G.exposedMelds=fm;G.exposedBy=G.cur;flashMelds(fm,bv);
   setMsg(`${p.name} ABAT ! 🎉 Les autres ont un dernier tour.`,'success');
   render();broadcast();setTimeout(()=>{advance();setTimeout(broadcast,300);},800);
 }
@@ -1144,13 +1152,14 @@ function applyAction(msg,guestIdx){
     const card=G.discard.pop();p.hand.push(card);G.phase='act';G.selCard=null;
     setMsg(`${p.name} prend la défausse.`,'');render();broadcast();
   }else if(msg.action==='discard'){
-    const card=p.hand.find(c=>c.id===msg.cardId);if(!card)return;
+    const card=p.hand.find(c=>String(c.id)===String(msg.cardId));if(!card)return;
+    msg.cardId=card.id;
     p.hand=p.hand.filter(c=>c.id!==msg.cardId);G.discard.push(card);
     if(G.goingOut!==-1){const{score}=bestMelds(p.hand,bv);p.roundScore=score;G.lastTurns.add(G.cur);}
     setMsg(`${p.name} défausse ${card.joker?'Joker':dv(card.val)+card.suit}.`,'');
     render();broadcast();setTimeout(advance,600);
   }else if(msg.action==='goOut'){
-    const disc=p.hand.find(c=>c.id===msg.discardId);if(!disc)return;
+    const disc=p.hand.find(c=>String(c.id)===String(msg.discardId));if(!disc)return;
     const rest=p.hand.filter(c=>c.id!==msg.discardId);
     const mgs=msg.meldGroups||[];
     const gc=mgs.map(ids=>ids.map(id=>p.hand.find(c=>c.id===id)).filter(Boolean));
@@ -1455,7 +1464,24 @@ function renderGuest(){
     });
     if(!GSL.meldGroups.length){const h=document.createElement('div');h.className='mzhint';h.textContent='Sélectionne une carte, puis "+ Nouveau pli"';mgEl.appendChild(h)}
     if(GSL.selCard&&!gIds.has(GSL.selCard)){const nb=document.createElement('button');nb.className='bsm gold';nb.textContent='+ Nouveau pli';nb.onclick=()=>guestToGrp(-1);mtEl.appendChild(nb)}
-  }else mzEl.style.display='none';
+  }else{
+    // Afficher les melds exposés par un autre joueur
+    if(GS.exposedMelds&&GS.exposedBy!=null&&GS.exposedBy!==GS.myIdx){
+      mzEl.style.display='flex';mgEl.innerHTML='';mtEl.innerHTML='';
+      const bvExp=GS.bv;
+      GS.exposedMelds.forEach(function(meld){
+        const row=document.createElement('div');row.className='mgr valid';
+        const b=document.createElement('div');b.className='mgbdg valid';
+        const isRun=meld.length>=3&&vRun(meld,bvExp);
+        b.textContent=isRun?'Suite ✓':'Famille ✓';
+        row.appendChild(b);
+        meld.forEach(function(c){row.appendChild(mkCEl(c,bvExp,false))});
+        mgEl.appendChild(row);
+      });
+    }else{
+      mzEl.style.display='none';
+    }
+  }
 
   // Hand
   const hl=document.getElementById('hlbl');hl.textContent=`Ta main — ${myP.name}`;hl.style.color=myP.color+'88';
