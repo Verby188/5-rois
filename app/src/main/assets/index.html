@@ -670,18 +670,23 @@ function setBadge(){
 }
 
 // ─ CREATE ─
+function _retryWithNewCode(){
+  const code=generateCode();
+  NET.roomCode=code;
+  document.getElementById('w-code-box').style.display='none';
+  document.getElementById('w-msg').textContent='Création de la salle...';
+  _connectWithRetry('cc'+code.toLowerCase(), true);
+}
+
 function doCreate(){
   const name=document.getElementById('host-name').value.trim()||'Hote';
-  const code=generateCode();
-  NET.roomCode=code;NET.mode='host';NET.expectedHumans=NET_EXP;NET.numAI=NET_AI;NET.conns=[];
-  show('s-waiting');
-  document.getElementById('w-code-box').style.display='flex';
-  document.getElementById('w-code').textContent=code;
-  document.getElementById('w-msg').textContent='En attente des joueurs...';
-  document.getElementById('w-err').style.display='none';
+  NET.mode='host';NET.expectedHumans=NET_EXP;NET.numAI=NET_AI;NET.conns=[];
   NET._hostName=name;
-  updateWaitingList();
-  _connectWithRetry('cc'+code.toLowerCase(), true);
+  show('s-waiting');
+  document.getElementById('w-code-box').style.display='none';
+  document.getElementById('w-msg').textContent='Création de la salle...';
+  document.getElementById('w-err').style.display='none';
+  _retryWithNewCode();
 }
 
 const PEER_CFG = {
@@ -718,9 +723,13 @@ function _connectWithRetry(peerId, isHost, attempt){
           setTimeout(()=>_connectWithRetry(peerId, isHost, attempt+1), delay);
           return;
         }
+        if(e.type==='unavailable-id' && isHost){
+          // Code pris - en générer un nouveau et recommencer AVANT d'afficher
+          _retryWithNewCode();
+          return;
+        }
         const tips={
           'network':'Impossible de joindre le serveur. Verifiez votre Wi-Fi/4G.',
-          'unavailable-id':'Ce code est deja utilise. Recreez une partie.',
           'peer-unavailable':'Joueur introuvable. Verifiez le code.',
           'server-error':'Serveur indisponible. Reessayez.',
           'disconnected':'Connexion perdue. Verifiez votre reseau.'
@@ -730,6 +739,9 @@ function _connectWithRetry(peerId, isHost, attempt){
       if(isHost){
         NET.peer.on('connection',conn=>{onGuestConnect(conn);});
         NET.peer.on('open',()=>{
+          // Afficher le code seulement maintenant qu'il est confirmé disponible
+          document.getElementById('w-code').textContent=NET.roomCode;
+          document.getElementById('w-code-box').style.display='flex';
           document.getElementById('w-msg').textContent='En attente des joueurs...';
           updateWaitingList();
         });
