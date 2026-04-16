@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cinq Couronnes</title>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Pro:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet">
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--felt:#0c3d1e;--gold:#c8a000;--gold2:#f0c830;--white:#fafaf5;--sh:rgba(0,0,0,.45)}
@@ -655,8 +654,9 @@ function aiSc(hand,bv){return bestMelds(hand,bv).score}
 function aiBD(hand,bv){let best=Infinity,idx=0;for(let i=0;i<hand.length;i++){const s=aiSc(hand.filter((_,j)=>j!==i),bv);if(s<best){best=s;idx=i}}return idx}
 function aiWD(hand,top,bv){if(!top)return false;const w=[...hand,top];let bw=Infinity;for(let i=0;i<w.length;i++){const s=aiSc(w.filter((_,j)=>j!==i),bv);if(s<bw)bw=s}return bw<aiSc(hand,bv)-1}
 
-// ══ NETWORK (Firebase) ══
-const NET={mode:null,myIdx:0,roomCode:'',expectedHumans:2,numAI:0,_roomRef:null,_stateRef:null,_actionsRef:null,_actionHandler:null,_presenceRef:null};
+// ══ NETWORK (Firebase REST) ══
+const DB_URL='https://u9-game-default-rtdb.europe-west1.firebasedatabase.app';
+const NET={mode:null,myIdx:0,roomCode:'',expectedHumans:2,numAI:0,_poll:null,_lastAction:null,_hostName:'',_guestNames:{}};
 let GS=null;
 let GSL={selCard:null,meldGroups:[],sortBy:null};
 
@@ -670,7 +670,19 @@ function setBadge(){
   b.textContent=NET.mode==='host'?`Hôte · ${NET.roomCode}`:`Invité · ${NET.roomCode}`;
 }
 
-// ─ CREATE (Firebase) ─
+async function fbGet(path){
+  try{const r=await fetch(DB_URL+'/'+path+'.json');if(!r.ok)return null;return r.json();}catch(e){return null;}
+}
+async function fbSet(path,data){
+  try{await fetch(DB_URL+'/'+path+'.json',{method:'PUT',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});}catch(e){}
+}
+async function fbPush(path,data){
+  try{const r=await fetch(DB_URL+'/'+path+'.json',{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});return r.json();}catch(e){}
+}
+async function fbDel(path){
+  try{await fetch(DB_URL+'/'+path+'.json',{method:'DELETE'});}catch(e){}
+}
+
 function doCreate(){
   const name=document.getElementById('host-name').value.trim()||'Hôte';
   NET.mode='host';NET.expectedHumans=NET_EXP;NET.numAI=NET_AI;
@@ -682,59 +694,48 @@ function doCreate(){
   _createRoomWithNewCode();
 }
 
-function _createRoomWithNewCode(){
+async function _createRoomWithNewCode(){
   const code=generateCode();
-  const roomRef=window.db.ref('cinqrois_rooms/'+code);
-  roomRef.once('value').then(snap=>{
-    if(snap.exists()){
-      // Code taken, try another
-      _createRoomWithNewCode();
-      return;
-    }
-    NET.roomCode=code;
-    NET._roomRef=roomRef;
-    // Write room data
-    roomRef.set({
-      hostName:NET._hostName,
-      expectedHumans:NET.expectedHumans,
-      numAI:NET.numAI,
-      started:false,
-      created:Date.now()
-    });
-    // Setup presence - delete room if host disconnects
-    NET._presenceRef=roomRef;
-    roomRef.onDisconnect().remove();
-    // Listen for guest joins
-    roomRef.child('guests').on('child_added',snap=>{
-      const gIdx=parseInt(snap.key);
-      const guest=snap.val();
-      NET._guestNames[gIdx]=guest.name||('Joueur '+(gIdx+1));
-      updateWaitingList();
-      checkCanStart();
-      // Send welcome
-      window.db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+gIdx).set({
-        t:'welcome',playerIdx:gIdx,expectedHumans:NET.expectedHumans,numAI:NET.numAI
-      });
-    });
-    // Listen for guest actions
-    NET._actionsRef=roomRef.child('actions');
-    NET._actionHandler=NET._actionsRef.on('child_added',snap=>{
-      const msg=snap.val();
-      if(!msg||!G)return;
-      snap.ref.remove();
-      const gIdx=msg.playerIdx;
-      if(G.cur!==gIdx)return;
-      applyAction(msg,gIdx);
-    });
-    // Show code after confirmed created
-    document.getElementById('w-code').textContent=code;
-    document.getElementById('w-code-box').style.display='flex';
-    document.getElementById('w-msg').textContent='En attente des joueurs...';
-    updateWaitingList();
-  });
+  const existing=await fbGet('cinqrois_rooms/'+code);
+  if(existing){_createRoomWithNewCode();return;}
+  NET.roomCode=code;
+  await fbSet('cinqrois_rooms/'+code,{hostName:NET._hostName,expectedHumans:NET.expectedHumans,numAI:NET.numAI,started:false,created:Date.now()});
+  document.getElementById('w-code').textContent=code;
+  document.getElementById('w-code-box').style.display='flex';
+  document.getElementById('w-msg').textContent='En attente des joueurs...';
+  updateWaitingList();
+  _startHostPolling();
 }
 
-NET._guestNames={};
+function _startHostPolling(){
+  if(NET._poll)clearInterval(NET._poll);
+  NET._poll=setInterval(async()=>{
+    if(!NET.roomCode)return;
+    const guests=await fbGet('cinqrois_rooms/'+NET.roomCode+'/guests');
+    if(guests){
+      for(const [idx,g] of Object.entries(guests)){
+        const i=parseInt(idx);
+        if(!NET._guestNames[i]){
+          NET._guestNames[i]=g.name||('Joueur '+(i+1));
+          updateWaitingList();checkCanStart();
+          await fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+i,{t:'welcome',playerIdx:i,expectedHumans:NET.expectedHumans,numAI:NET.numAI});
+        }
+      }
+    }
+    const actions=await fbGet('cinqrois_rooms/'+NET.roomCode+'/actions');
+    if(actions&&G){
+      for(const [key,msg] of Object.entries(actions)){
+        if(key===NET._lastAction)continue;
+        NET._lastAction=key;
+        await fbDel('cinqrois_rooms/'+NET.roomCode+'/actions/'+key);
+        const gIdx=msg.playerIdx;
+        if(G.cur!==gIdx)continue;
+        applyAction(msg,gIdx);
+      }
+    }
+  },1500);
+}
+
 function updateWaitingList(){
   const el=document.getElementById('w-list');el.innerHTML='';
   const total=NET.expectedHumans+NET.numAI;
@@ -751,10 +752,10 @@ function updateWaitingList(){
 }
 
 function checkCanStart(){
-  const connectedGuests=Object.keys(NET._guestNames).length;
+  const n=Object.keys(NET._guestNames).length;
   const btn=document.getElementById('w-start-btn');
-  btn.style.display=connectedGuests>=NET.expectedHumans-1?'block':'none';
-  if(connectedGuests>=NET.expectedHumans-1)document.getElementById('w-msg').textContent='Tous les joueurs sont connectés !';
+  btn.style.display=n>=NET.expectedHumans-1?'block':'none';
+  if(n>=NET.expectedHumans-1)document.getElementById('w-msg').textContent='Tous les joueurs sont connectés !';
 }
 
 function hostStart(){
@@ -768,7 +769,6 @@ function hostStart(){
   }
 }
 
-// ─ JOIN (Firebase) ─
 function doJoin(){
   const code=document.getElementById('join-code').value.trim().toUpperCase();
   if(code.length!==6){showNetErr('Le code doit faire 6 lettres.');return;}
@@ -779,70 +779,67 @@ function doJoin(){
   document.getElementById('w-err').style.display='none';
   document.getElementById('w-start-btn').style.display='none';
   document.getElementById('w-list').innerHTML='';
+  _joinRoom();
+}
+
+async function _joinRoom(){
   const name=document.getElementById('join-name').value.trim()||'Invité';
-  const roomRef=window.db.ref('cinqrois_rooms/'+code);
-  roomRef.once('value').then(snap=>{
-    if(!snap.exists()){showWErr('Code introuvable. Vérifiez le code.');return;}
-    const room=snap.val();
-    NET.expectedHumans=room.expectedHumans;
-    NET.numAI=room.numAI;
-    NET._roomRef=roomRef;
-    // Find available guest slot
-    const guests=room.guests||{};
-    const usedSlots=Object.keys(guests).map(Number);
-    let gIdx=1;
-    while(usedSlots.includes(gIdx))gIdx++;
-    if(gIdx>=room.expectedHumans){showWErr('La partie est complète.');return;}
-    NET.myIdx=gIdx;
-    // Register as guest
-    roomRef.child('guests/'+gIdx).set({name,connected:true,joined:Date.now()});
-    roomRef.child('guests/'+gIdx).onDisconnect().remove();
-    saveSession();
-    // Listen for welcome & state updates
-    NET._stateRef=roomRef.child('state/'+gIdx);
-    NET._stateRef.on('value',snap=>{
-      const msg=snap.val();
-      if(!msg)return;
-      if(msg.t==='welcome'){
-        document.getElementById('w-msg').textContent=`Connecté ! En attente du démarrage...`;
-        return;
-      }
-      if(msg.t==='state'){
-        const wasGame=GS!==null;
-        GS=msg;
-        if(!wasGame){show('game');setBadge();}
-        const prevCur=wasGame?(GS._prevCur??-1):-1;
-        if(GS.cur===GS.myIdx){
-          if(!wasGame||prevCur!==GS.myIdx){
-            GSL.selCard=null;GSL.meldGroups=[];
-            notifyMyTurn(GS.players[GS.myIdx].name,GS.players[GS.myIdx].color,
-              GS.goingOut!==-1?'⚡ Dernier tour !':'Piochez une carte');
-          }
+  const room=await fbGet('cinqrois_rooms/'+NET.roomCode);
+  if(!room){showWErr('Code introuvable. Vérifiez le code.');return;}
+  NET.expectedHumans=room.expectedHumans;
+  NET.numAI=room.numAI;
+  const guests=room.guests||{};
+  const used=Object.keys(guests).map(Number);
+  let gIdx=1;while(used.includes(gIdx))gIdx++;
+  if(gIdx>=room.expectedHumans){showWErr('La partie est complète.');return;}
+  NET.myIdx=gIdx;
+  await fbSet('cinqrois_rooms/'+NET.roomCode+'/guests/'+gIdx,{name,connected:true,joined:Date.now()});
+  saveSession();
+  document.getElementById('w-msg').textContent='Connecté ! En attente du démarrage...';
+  _startGuestPolling(gIdx);
+}
+
+function _startGuestPolling(gIdx){
+  if(NET._poll)clearInterval(NET._poll);
+  let lastState=null;
+  NET._poll=setInterval(async()=>{
+    if(!NET.roomCode)return;
+    const state=await fbGet('cinqrois_rooms/'+NET.roomCode+'/state/'+gIdx);
+    if(!state)return;
+    const s=JSON.stringify(state);
+    if(s===lastState)return;
+    lastState=s;
+    if(state.t==='welcome'){document.getElementById('w-msg').textContent='Connecté ! En attente du démarrage...';return;}
+    if(state.t==='state'){
+      const wasGame=GS!==null;
+      GS=state;
+      if(!wasGame){show('game');setBadge();}
+      const prevCur=wasGame?(GS._prevCur??-1):-1;
+      if(GS.cur===GS.myIdx){
+        if(!wasGame||prevCur!==GS.myIdx){
+          GSL.selCard=null;GSL.meldGroups=[];
+          notifyMyTurn(GS.players[GS.myIdx].name,GS.players[GS.myIdx].color,GS.goingOut!==-1?'⚡ Dernier tour !':'Piochez une carte');
         }
-        GS._prevCur=GS.cur;
-        if(GSL.sortBy)guestApplySort();
-        renderGuest();
-        if(GS.phase==='round_end')showPopupFromGS();
-        if(GS.gameOver)showEndFromGS();
       }
-      if(msg.t==='error'){
-        document.getElementById('msgb').textContent=msg.msg;
-        document.getElementById('msgb').className='msgb alert';
-      }
-    });
-    document.getElementById('w-msg').textContent='Connecté ! En attente du démarrage...';
-  }).catch(()=>showWErr('Impossible de rejoindre. Vérifiez votre connexion.'));
+      GS._prevCur=GS.cur;
+      if(GSL.sortBy)guestApplySort();
+      renderGuest();
+      if(GS.phase==='round_end')showPopupFromGS();
+      if(GS.gameOver)showEndFromGS();
+    }
+    if(state.t==='error'){document.getElementById('msgb').textContent=state.msg;document.getElementById('msgb').className='msgb alert';}
+  },1000);
 }
 
 function gsend(msg){
   if(NET.mode!=='guest'||!NET.roomCode)return;
-  window.db.ref('cinqrois_rooms/'+NET.roomCode+'/actions').push({...msg,playerIdx:NET.myIdx});
+  fbPush('cinqrois_rooms/'+NET.roomCode+'/actions',Object.assign({},msg,{playerIdx:NET.myIdx}));
 }
 
 function broadcast(){
   if(NET.mode!=='host'||!G||!NET.roomCode)return;
   for(let gi=1;gi<NET.expectedHumans;gi++){
-    window.db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+gi).set(buildPkt(gi));
+    fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+gi,buildPkt(gi));
   }
 }
 
@@ -850,29 +847,27 @@ function buildPkt(pi){
   const bv=getBV();
   return{
     t:'state',
-    round:G.round,bv,phase:G.phase,cur:G.cur,goingOut:G.goingOut,
+    round:G.round,bv:bv,phase:G.phase,cur:G.cur,goingOut:G.goingOut,
     lastTurnsArr:[...G.lastTurns],deckCount:G.deck.length,
-    discardTop:G.discard.length?{...G.discard[G.discard.length-1]}:null,
+    discardTop:G.discard.length?Object.assign({},G.discard[G.discard.length-1]):null,
     msg:G.msg,msgType:G.msgType,
     myIdx:pi,
-    myHand:G.players[pi].hand.map(c=>({...c})),
-    players:G.players.map(p=>({name:p.name,color:p.color,isHuman:p.isHuman,handCount:p.hand.length,roundScore:p.roundScore,totalScore:p.totalScore})),
+    myHand:G.players[pi].hand.map(function(c){return Object.assign({},c)}),
+    players:G.players.map(function(p){return{name:p.name,color:p.color,isHuman:p.isHuman,handCount:p.hand.length,roundScore:p.roundScore,totalScore:p.totalScore}}),
     gameOver:G.phase==='game_over',
-    finalScores:G.phase==='game_over'?G.players.map(p=>({name:p.name,color:p.color,totalScore:p.totalScore})):null,
+    finalScores:G.phase==='game_over'?G.players.map(function(p){return{name:p.name,color:p.color,totalScore:p.totalScore}}):null,
   };
 }
 
-function abortNet(){
-  _cleanupFirebase();
-  NET.mode=null;NET.myIdx=0;NET.roomCode='';G=null;GS=null;
-  setBadge();show('s-lobby');
+function _cleanupNet(){
+  if(NET._poll){clearInterval(NET._poll);NET._poll=null;}
+  if(NET.mode==='host'&&NET.roomCode)fbDel('cinqrois_rooms/'+NET.roomCode);
+  else if(NET.mode==='guest'&&NET.roomCode)fbDel('cinqrois_rooms/'+NET.roomCode+'/guests/'+NET.myIdx);
+  NET.roomCode='';NET.myIdx=0;
 }
 
-function _cleanupFirebase(){
-  if(NET._stateRef)try{NET._stateRef.off();}catch(e){}
-  if(NET._actionsRef&&NET._actionHandler)try{NET._actionsRef.off('child_added',NET._actionHandler);}catch(e){}
-  if(NET.mode==='host'&&NET._roomRef)try{NET._roomRef.remove();}catch(e){}
-  NET._roomRef=null;NET._stateRef=null;NET._actionsRef=null;NET._actionHandler=null;NET._presenceRef=null;
+function abortNet(){
+  _cleanupNet();NET.mode=null;G=null;GS=null;setBadge();show('s-lobby');
 }
 
 function showNetErr(msg){const e=document.getElementById('net-err');e.textContent=msg;e.style.display='block'}
@@ -884,17 +879,9 @@ function showWErr(msg){
 function retryConnect(){
   document.getElementById('w-err').style.display='none';
   const rb=document.getElementById('w-retry-btn');if(rb)rb.style.display='none';
-  _cleanupFirebase();
-  if(NET.mode==='host')doCreate();
-  else doJoin();
+  _cleanupNet();
+  if(NET.mode==='host')doCreate();else doJoin();
 }
-
-// Resync au retour de l'app (ex: SMS)
-document.addEventListener('visibilitychange',()=>{
-  if(!document.hidden&&NET.mode==='guest'&&NET.roomCode){
-    gsend({action:'resync'});
-  }
-});
 
 // ═══════════════════════════════════════════
 // GAME STATE
@@ -1052,7 +1039,7 @@ function showEndFromGS(){
 
 function backToSetup(){
   clearSession();
-  _cleanupFirebase();
+  _cleanupNet();
   NET.mode=null;G=null;GS=null;GSL={selCard:null,meldGroups:[],sortBy:null};
   document.getElementById('net-badge').style.display='none';
   document.getElementById('cover').classList.remove('on');
@@ -1145,7 +1132,7 @@ function applyAction(msg,guestIdx){
   const bv=getBV();
   const p=G.players[guestIdx];
   if(msg.action==='resync'){
-    window.db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+guestIdx).set(buildPkt(guestIdx));
+    fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+guestIdx, buildPkt(guestIdx));
     return;
   }
   if(msg.action==='drawDeck'){
@@ -1170,7 +1157,7 @@ function applyAction(msg,guestIdx){
     const av=gc.length>0&&gc.every(g=>vMeld(g,bv));
     let fm;
     if(av&&rest.filter(c=>!new Set(mgs.flat()).has(c.id)).length===0){fm=gc;}
-    else{fm=partMelds(rest,bv);if(!fm){window.db.ref('cinqrois_rooms/'+NET.roomCode+'/state/'+guestIdx).set({t:'error',msg:'Impossible d\'abattre ! Vérifiez vos combinaisons.'});return;}}
+    else{fm=partMelds(rest,bv);if(!fm){fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+guestIdx,{t:'error',msg:'Impossible d\'abattre ! Vérifiez vos combinaisons.'});return;}}
     p.hand=[];G.discard.push(disc);G.goingOut=G.cur;G.lastTurns.add(G.cur);p.roundScore=0;
     G.exposedMelds=fm;G.exposedBy=G.cur;flashMelds(fm,bv);setMsg(`${p.name} ABAT ! 🎉 Les autres ont un dernier tour.`,'success');
     render();broadcast();setTimeout(()=>{advance();setTimeout(broadcast,300);},800);
@@ -1746,27 +1733,6 @@ window.addEventListener('DOMContentLoaded',()=>{
   // Enable/disable join button on load
   checkCodeInput();
 });
-</script>
-<script>
-(function initFirebase(){
-  if(typeof firebase === 'undefined'){
-    setTimeout(initFirebase, 200);
-    return;
-  }
-  if(!firebase.apps.length){
-    firebase.initializeApp({
-      apiKey: "AIzaSyCPVnGohf_etSJYIFCSnWxjIB2RPX5rmnU",
-      authDomain: "u9-game.firebaseapp.com",
-      databaseURL: "https://u9-game-default-rtdb.europe-west1.firebasedatabase.app",
-      projectId: "u9-game",
-      storageBucket: "u9-game.firebasestorage.app",
-      messagingSenderId: "1063280643089",
-      appId: "1:1063280643089:web:209c246dbbfaa8772cb5b0"
-    });
-  }
-  window.db = firebase.database();
-  console.log('Firebase OK');
-})();
 </script>
 </body>
 </html>
