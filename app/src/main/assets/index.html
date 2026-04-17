@@ -308,6 +308,35 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
   .code-input{font-size:1.1rem;letter-spacing:.2em}
   .rc-code{font-size:2.2rem}
 }
+
+/* ══ AUTH ══ */
+#s-auth{justify-content:center;gap:1.2rem;padding:2rem 1.5rem}
+.auth-box{background:rgba(0,0,0,.35);border:1px solid rgba(200,160,0,.22);border-radius:16px;padding:1.4rem;width:100%;max-width:360px;display:flex;flex-direction:column;gap:.9rem}
+.auth-tabs{display:flex;gap:.5rem;margin-bottom:.3rem}
+.auth-tab{flex:1;padding:.5rem;border:2px solid rgba(255,255,255,.1);border-radius:8px;background:none;color:rgba(255,255,255,.4);font-family:'Cinzel',serif;font-size:.8rem;cursor:pointer;transition:.2s}
+.auth-tab.on{border-color:var(--gold);color:var(--gold);background:rgba(200,160,0,.1)}
+.auth-inp{width:100%;padding:.6rem .9rem;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.15);border-radius:8px;color:#fff;font-family:'Crimson Pro',serif;font-size:.95rem;outline:none}
+.auth-inp:focus{border-color:rgba(200,160,0,.5)}
+.auth-err{color:#ef5350;font-size:.8rem;text-align:center;min-height:1.1rem}
+.auth-skip{font-size:.72rem;color:rgba(255,255,255,.3);text-align:center;cursor:pointer;text-decoration:underline;margin-top:.2rem}
+
+/* ══ FRIENDS ══ */
+#s-friends{justify-content:flex-start;padding:1.5rem 1rem;overflow-y:auto;gap:0}
+.friend-row{display:flex;align-items:center;gap:.7rem;padding:.65rem .5rem;border-bottom:1px solid rgba(255,255,255,.06)}
+.friend-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Cinzel',serif;font-size:.85rem;font-weight:700;flex-shrink:0}
+.friend-name{flex:1;font-size:.9rem}
+.friend-status{font-size:.7rem;color:rgba(255,255,255,.35)}
+.fbtn{padding:.3rem .7rem;border-radius:6px;border:1.5px solid rgba(200,160,0,.4);background:none;color:var(--gold);font-size:.72rem;font-family:'Cinzel',serif;cursor:pointer;transition:.15s}
+.fbtn:hover{background:rgba(200,160,0,.15)}
+.fbtn.red{border-color:rgba(239,83,80,.4);color:#ef5350}
+.fbtn.green{border-color:rgba(102,187,106,.4);color:#66bb6a}
+.search-inp{width:100%;padding:.5rem .8rem;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;font-size:.88rem;font-family:'Crimson Pro',serif;outline:none;margin-bottom:.5rem}
+.search-inp:focus{border-color:rgba(200,160,0,.4)}
+
+/* ══ PROFIL BADGE ══ */
+.profile-badge{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:rgba(255,255,255,.6);cursor:pointer;padding:.3rem .6rem;border:1px solid rgba(255,255,255,.1);border-radius:8px;margin-top:.3rem}
+.profile-badge:hover{border-color:rgba(200,160,0,.3);color:var(--gold)}
+
 </style>
 </head>
 <body>
@@ -320,7 +349,28 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 </div>
 
 <!-- ══ LOBBY ══ -->
-<div id="s-lobby" class="scr on">
+
+<!-- ══ AUTH ══ -->
+<div id="s-auth" class="scr on">
+  <div class="logo">👑</div>
+  <h1 style="font-size:2rem">Cinq Couronnes</h1>
+  <div class="auth-box">
+    <div class="auth-tabs">
+      <button class="auth-tab on" id="tab-login" onclick="switchAuthTab('login')">Connexion</button>
+      <button class="auth-tab" id="tab-register" onclick="switchAuthTab('register')">Inscription</button>
+    </div>
+    <div id="auth-pseudo-row" style="display:none">
+      <input class="auth-inp" id="auth-pseudo" placeholder="Pseudo (ex: Mathieu)" maxlength="14">
+    </div>
+    <input class="auth-inp" id="auth-email" placeholder="Email" type="email">
+    <input class="auth-inp" id="auth-pwd" placeholder="Mot de passe" type="password">
+    <div class="auth-err" id="auth-err"></div>
+    <button class="gbtn" id="auth-btn" onclick="doAuth()">Se connecter</button>
+    <div class="auth-skip" onclick="skipAuth()">Continuer sans compte</div>
+  </div>
+</div>
+
+<div id="s-lobby" class="scr">
   <div class="logo">👑 ♥ ★ ♣ ♦</div>
   <h1>Cinq<br>Couronnes</h1>
   <div class="sub">Five Crowns</div>
@@ -337,6 +387,15 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
       <span class="lbtn-icon">📖</span>
       <div><div>Règles du jeu</div><div class="lbtn-sub">Suites, familles, Bonus et stratégies</div></div>
     </button>
+    <button class="lbtn" onclick="show('s-friends')" id="friends-btn" style="display:none">
+      <span class="lbtn-icon">👥</span>
+      <div><div>Amis</div><div id="friends-btn-sub" class="lbtn-sub">Gérer votre liste d'amis</div></div>
+    </button>
+  </div>
+  <div id="lobby-profile" class="profile-badge" onclick="showProfile()" style="display:none">
+    <span id="lobby-avatar" style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700"></span>
+    <span id="lobby-pseudo-lbl"></span>
+    <span style="margin-left:auto;font-size:.65rem;opacity:.5">▼</span>
   </div>
   <div class="rules-hint">11 manches · Bonus change chaque manche · Plus bas score gagne</div>
 </div>
@@ -416,6 +475,32 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
   </div>
 </div>
 
+
+<!-- ══ AMIS ══ -->
+<div id="s-friends" class="scr" style="justify-content:flex-start;padding:1.5rem 1rem;overflow-y:auto;gap:0">
+  <div style="width:100%;max-width:480px;margin:0 auto">
+    <button class="back-btn" onclick="show('s-lobby')" style="margin-bottom:1rem">← Retour</button>
+    <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.2rem;margin-bottom:1rem">👥 Amis</h2>
+
+    <!-- Recherche -->
+    <div class="scard" style="margin-bottom:1rem">
+      <div class="slbl">Ajouter un ami</div>
+      <input class="search-inp" id="friend-search" placeholder="Pseudo de l'ami..." maxlength="14" oninput="searchFriend()">
+      <div id="friend-search-result"></div>
+    </div>
+
+    <!-- Demandes reçues -->
+    <div id="friend-requests-section" style="display:none;margin-bottom:1rem">
+      <div class="slbl" style="font-family:'Cinzel',serif;font-size:.65rem;color:rgba(200,160,0,.6);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.4rem">Demandes reçues</div>
+      <div id="friend-requests-list"></div>
+    </div>
+
+    <!-- Liste d'amis -->
+    <div class="slbl" style="font-family:'Cinzel',serif;font-size:.65rem;color:rgba(200,160,0,.6);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.4rem">Mes amis</div>
+    <div id="friends-list"><div style="color:rgba(255,255,255,.3);font-size:.85rem;padding:.5rem">Aucun ami pour l'instant</div></div>
+  </div>
+</div>
+
 <!-- ══ LOCAL SETUP ══ -->
 <div id="s-local" class="scr">
   <div style="display:flex;flex-direction:column;align-items:center;gap:1.5rem;padding:2rem 1rem;width:100%">
@@ -446,6 +531,10 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
         <div><div class="slbl" style="margin-bottom:.3rem">Joueurs attendus</div><div class="cnt-row" id="n-cnt-row"></div></div>
         <div><div class="slbl" style="margin-bottom:.3rem">Adversaires IA</div><div class="cnt-row" id="n-ai-row"></div></div>
         <button class="gbtn" onclick="doCreate()">Créer la partie</button>
+        <div id="invite-friends-section" style="display:none;margin-top:.5rem">
+          <div class="slbl" style="font-family:'Cinzel',serif;font-size:.65rem;color:rgba(200,160,0,.6);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.4rem">Inviter un ami</div>
+          <div id="invite-friends-list"></div>
+        </div>
       </div>
 
       <div class="sep">ou</div>
@@ -549,7 +638,7 @@ const PCOLORS=['#f0c830','#ef5350','#42a5f5','#66bb6a','#ab47bc','#ff7043','#26c
 const pc=i=>PCOLORS[i%PCOLORS.length];
 function dv(v){return{11:'V',12:'D',13:'R'}[v]||String(v)}
 function show(id){
-  ['s-lobby','s-local','s-net','s-waiting','game','endscreen','s-rules'].forEach(s=>{
+  ['s-auth','s-lobby','s-local','s-net','s-waiting','game','endscreen','s-rules','s-friends'].forEach(s=>{
     const el=document.getElementById(s);
     if(!el)return;
     el.classList.toggle('on',s===id);
@@ -1747,11 +1836,271 @@ window.show = function(id){
   }
 };
 
+
+// ══════════════════════════════════════════
+// AUTH & PROFIL (Firebase Auth REST)
+// ══════════════════════════════════════════
+const AUTH_URL='https://identitytoolkit.googleapis.com/v1/accounts';
+const FIREBASE_KEY='AIzaSyCPVnGohf_etSJYIFCSnWxjIB2RPX5rmnU';
+const FCM_SERVER_KEY='BAa2ZpErv4BFcBWT_j8afBvLDbT-ZenKXz6XWPPgZvAIS1yrRT9NdfFk7jGWeDXcapVE3aEb56K39wr9Dr3p6RQ';
+
+let CUR_USER=null; // {uid, email, pseudo, idToken, fcmToken}
+
+function switchAuthTab(tab){
+  document.getElementById('tab-login').classList.toggle('on', tab==='login');
+  document.getElementById('tab-register').classList.toggle('on', tab==='register');
+  document.getElementById('auth-pseudo-row').style.display=tab==='register'?'block':'none';
+  document.getElementById('auth-btn').textContent=tab==='login'?'Se connecter':'Créer le compte';
+  document.getElementById('auth-err').textContent='';
+}
+
+async function doAuth(){
+  const isReg=document.getElementById('tab-register').classList.contains('on');
+  const email=document.getElementById('auth-email').value.trim();
+  const pwd=document.getElementById('auth-pwd').value;
+  const pseudo=document.getElementById('auth-pseudo').value.trim();
+  const errEl=document.getElementById('auth-err');
+  errEl.textContent='';
+  if(!email||!pwd){errEl.textContent='Email et mot de passe requis.';return;}
+  if(isReg&&!pseudo){errEl.textContent='Choisis un pseudo.';return;}
+  if(isReg&&pseudo.length<2){errEl.textContent='Pseudo trop court (min 2 caractères).';return;}
+  document.getElementById('auth-btn').textContent='...';
+  try{
+    let url=isReg?`${AUTH_URL}:signUp?key=${FIREBASE_KEY}`:`${AUTH_URL}:signInWithPassword?key=${FIREBASE_KEY}`;
+    const r=await fetch(url,{method:'POST',body:JSON.stringify({email,password:pwd,returnSecureToken:true}),headers:{'Content-Type':'application/json'}});
+    const d=await r.json();
+    if(d.error){errEl.textContent=translateAuthError(d.error.message);document.getElementById('auth-btn').textContent=isReg?'Créer le compte':'Se connecter';return;}
+    if(isReg){
+      // Vérifier que le pseudo est unique
+      const taken=await fbGet('pseudos/'+pseudo.toLowerCase());
+      if(taken){errEl.textContent='Ce pseudo est déjà pris.';document.getElementById('auth-btn').textContent='Créer le compte';return;}
+      // Sauvegarder le profil
+      await fbSet('users/'+d.localId,{pseudo,email,created:Date.now()});
+      await fbSet('pseudos/'+pseudo.toLowerCase(),d.localId);
+    }
+    const profile=await fbGet('users/'+d.localId)||{};
+    CUR_USER={uid:d.localId,email,pseudo:profile.pseudo||pseudo||email.split('@')[0],idToken:d.idToken,fcmToken:null};
+    localStorage.setItem('cinqr_user',JSON.stringify({uid:d.localId,email,pseudo:CUR_USER.pseudo}));
+    onUserLoggedIn();
+  }catch(e){errEl.textContent='Erreur réseau. Réessayez.';document.getElementById('auth-btn').textContent=isReg?'Créer le compte':'Se connecter';}
+}
+
+function translateAuthError(msg){
+  const m={'EMAIL_NOT_FOUND':'Email introuvable.','INVALID_PASSWORD':'Mot de passe incorrect.','USER_DISABLED':'Compte désactivé.','EMAIL_EXISTS':'Email déjà utilisé.','WEAK_PASSWORD : Password should be at least 6 characters':'Mot de passe trop court (min 6 caractères).','INVALID_EMAIL':'Email invalide.','INVALID_LOGIN_CREDENTIALS':'Email ou mot de passe incorrect.'};
+  return m[msg]||'Erreur: '+msg;
+}
+
+function skipAuth(){
+  CUR_USER=null;
+  show('s-lobby');
+}
+
+function onUserLoggedIn(){
+  // Mettre à jour l'interface
+  document.getElementById('lobby-profile').style.display='flex';
+  document.getElementById('lobby-pseudo-lbl').textContent=CUR_USER.pseudo;
+  const av=document.getElementById('lobby-avatar');
+  av.textContent=CUR_USER.pseudo[0].toUpperCase();
+  av.style.background=pc(CUR_USER.pseudo.charCodeAt(0)%8);
+  document.getElementById('friends-btn').style.display='flex';
+  // Pré-remplir le pseudo dans les champs de jeu
+  const hostInp=document.getElementById('host-name');
+  if(hostInp&&!hostInp.value)hostInp.value=CUR_USER.pseudo;
+  const joinInp=document.getElementById('join-name');
+  if(joinInp&&!joinInp.value)joinInp.value=CUR_USER.pseudo;
+  // Mettre à jour le FCM token si disponible
+  if(window._fcmToken)updateFcmToken(window._fcmToken);
+  // Charger les amis
+  loadFriends();
+  show('s-lobby');
+}
+
+function showProfile(){
+  if(!CUR_USER)return;
+  if(confirm(`Connecté en tant que ${CUR_USER.pseudo}\nSe déconnecter ?`)){
+    CUR_USER=null;
+    localStorage.removeItem('cinqr_user');
+    document.getElementById('lobby-profile').style.display='none';
+    document.getElementById('friends-btn').style.display='none';
+    show('s-auth');
+  }
+}
+
+async function updateFcmToken(token){
+  if(!CUR_USER||!token)return;
+  CUR_USER.fcmToken=token;
+  await fbSet('users/'+CUR_USER.uid+'/fcmToken',token);
+}
+
+// Restaurer la session au chargement
+function tryRestoreSession(){
+  const saved=localStorage.getItem('cinqr_user');
+  if(!saved)return false;
+  try{
+    const u=JSON.parse(saved);
+    CUR_USER={uid:u.uid,email:u.email,pseudo:u.pseudo,idToken:null,fcmToken:null};
+    onUserLoggedIn();
+    return true;
+  }catch(e){localStorage.removeItem('cinqr_user');return false;}
+}
+
+// ══════════════════════════════════════════
+// AMIS
+// ══════════════════════════════════════════
+let _friendsData={};
+
+async function loadFriends(){
+  if(!CUR_USER)return;
+  const data=await fbGet('users/'+CUR_USER.uid+'/friends')||{};
+  _friendsData=data;
+  renderFriendsList();
+  renderFriendRequests();
+  renderInviteFriends();
+}
+
+async function searchFriend(){
+  const q=document.getElementById('friend-search').value.trim().toLowerCase();
+  const res=document.getElementById('friend-search-result');
+  if(q.length<2){res.innerHTML='';return;}
+  const uid=await fbGet('pseudos/'+q);
+  if(!uid||uid===CUR_USER.uid){res.innerHTML='<div style="color:rgba(255,255,255,.4);font-size:.8rem;padding:.3rem">Aucun résultat</div>';return;}
+  const profile=await fbGet('users/'+uid)||{};
+  const pseudo=profile.pseudo||q;
+  const alreadyFriend=_friendsData[uid];
+  res.innerHTML=`<div class="friend-row">
+    <div class="friend-av" style="background:${pc(pseudo.charCodeAt(0)%8)}">${pseudo[0].toUpperCase()}</div>
+    <span class="friend-name">${pseudo}</span>
+    ${alreadyFriend?'<span style="color:rgba(255,255,255,.3);font-size:.75rem">Déjà ami</span>':`<button class="fbtn green" onclick="sendFriendRequest('${uid}','${pseudo}')">+ Ajouter</button>`}
+  </div>`;
+}
+
+async function sendFriendRequest(toUid,toPseudo){
+  if(!CUR_USER)return;
+  await fbSet('users/'+toUid+'/friendRequests/'+CUR_USER.uid,{from:CUR_USER.pseudo,uid:CUR_USER.uid,ts:Date.now()});
+  // Notifier
+  const token=await fbGet('users/'+toUid+'/fcmToken');
+  if(token)sendFCMNotification(token,'Demande d\'ami',CUR_USER.pseudo+' veut être votre ami !',{type:'friendRequest',uid:CUR_USER.uid});
+  document.getElementById('friend-search-result').innerHTML='<div style="color:#66bb6a;font-size:.8rem;padding:.3rem">Demande envoyée !</div>';
+}
+
+async function renderFriendRequests(){
+  if(!CUR_USER)return;
+  const reqs=await fbGet('users/'+CUR_USER.uid+'/friendRequests')||{};
+  const entries=Object.entries(reqs);
+  const sec=document.getElementById('friend-requests-section');
+  const list=document.getElementById('friend-requests-list');
+  if(!entries.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  list.innerHTML=entries.map(([uid,req])=>`<div class="friend-row">
+    <div class="friend-av" style="background:${pc(req.from.charCodeAt(0)%8)}">${req.from[0].toUpperCase()}</div>
+    <span class="friend-name">${req.from}</span>
+    <button class="fbtn green" onclick="acceptFriend('${uid}','${req.from}')">✓</button>
+    <button class="fbtn red" onclick="declineFriend('${uid}')">✗</button>
+  </div>`).join('');
+}
+
+async function acceptFriend(uid,pseudo){
+  if(!CUR_USER)return;
+  await fbSet('users/'+CUR_USER.uid+'/friends/'+uid,{pseudo,uid,since:Date.now()});
+  await fbSet('users/'+uid+'/friends/'+CUR_USER.uid,{pseudo:CUR_USER.pseudo,uid:CUR_USER.uid,since:Date.now()});
+  await fbDel('users/'+CUR_USER.uid+'/friendRequests/'+uid);
+  loadFriends();
+}
+
+async function declineFriend(uid){
+  await fbDel('users/'+CUR_USER.uid+'/friendRequests/'+uid);
+  renderFriendRequests();
+}
+
+async function removeFriend(uid){
+  if(!confirm('Supprimer cet ami ?'))return;
+  await fbDel('users/'+CUR_USER.uid+'/friends/'+uid);
+  await fbDel('users/'+uid+'/friends/'+CUR_USER.uid);
+  loadFriends();
+}
+
+function renderFriendsList(){
+  const list=document.getElementById('friends-list');
+  const entries=Object.entries(_friendsData);
+  if(!entries.length){list.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.85rem;padding:.5rem">Aucun ami pour l\'instant</div>';return;}
+  list.innerHTML=entries.map(([uid,f])=>`<div class="friend-row">
+    <div class="friend-av" style="background:${pc(f.pseudo.charCodeAt(0)%8)}">${f.pseudo[0].toUpperCase()}</div>
+    <div style="flex:1"><div class="friend-name">${f.pseudo}</div></div>
+    <button class="fbtn red" onclick="removeFriend('${uid}')">Retirer</button>
+  </div>`).join('');
+  // Mettre à jour le badge amis
+  const sub=document.getElementById('friends-btn-sub');
+  if(sub)sub.textContent=entries.length+' ami'+(entries.length>1?'s':'');
+}
+
+function renderInviteFriends(){
+  if(!CUR_USER){document.getElementById('invite-friends-section').style.display='none';return;}
+  const entries=Object.entries(_friendsData);
+  const sec=document.getElementById('invite-friends-section');
+  if(!entries.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  document.getElementById('invite-friends-list').innerHTML=entries.map(([uid,f])=>`<div class="friend-row">
+    <div class="friend-av" style="background:${pc(f.pseudo.charCodeAt(0)%8)}">${f.pseudo[0].toUpperCase()}</div>
+    <span class="friend-name">${f.pseudo}</span>
+    <button class="fbtn" onclick="inviteFriendToGame('${uid}','${f.pseudo}')">Inviter</button>
+  </div>`).join('');
+}
+
+async function inviteFriendToGame(uid,pseudo){
+  const code=document.getElementById('w-code').textContent.trim();
+  if(!code){alert('Créez d\'abord une partie !');return;}
+  const token=await fbGet('users/'+uid+'/fcmToken');
+  if(!token){alert(pseudo+' n\'a pas activé les notifications.');return;}
+  await sendFCMNotification(token,'Invitation de '+CUR_USER.pseudo,pseudo+', rejoins ma partie de Cinq Couronnes !',{type:'gameInvite',code});
+  const btn=event.currentTarget;
+  btn.textContent='Envoyé ✓';btn.disabled=true;
+  setTimeout(()=>{btn.textContent='Inviter';btn.disabled=false;},3000);
+}
+
+// ══════════════════════════════════════════
+// FCM - Notifications push
+// ══════════════════════════════════════════
+async function sendFCMNotification(token,title,body,data){
+  try{
+    await fetch('https://fcm.googleapis.com/fcm/send',{
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'key='+FCM_SERVER_KEY},
+      body:JSON.stringify({to:token,notification:{title,body,sound:'default'},data:data||{}})
+    });
+  }catch(e){console.error('FCM error',e);}
+}
+
+// Recevoir le token FCM depuis Android (appelé par MainActivity)
+function onFcmToken(token){
+  window._fcmToken=token;
+  if(CUR_USER)updateFcmToken(token);
+}
+
+// Recevoir une notification depuis Android (quand l'app est ouverte)
+function onFcmMessage(data){
+  try{
+    const d=typeof data==='string'?JSON.parse(data):data;
+    if(d.type==='gameInvite'&&d.code){
+      if(confirm('Invitation reçue !\nRejoindre la partie de '+d.from+' ?')){
+        show('s-net');
+        const inp=document.getElementById('join-code');
+        if(inp){inp.value=d.code;checkCodeInput();}
+      }
+    }else if(d.type==='friendRequest'){
+      loadFriends();
+    }
+  }catch(e){}
+}
+
+
 // Init
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('cover').classList.remove('on');
   document.getElementById('ov').classList.remove('on');
   document.getElementById('popup').classList.remove('on');
+  // Restaurer session utilisateur
+  const restored=tryRestoreSession();
+  if(!restored){show('s-auth');}
   // Check for previous session
   setTimeout(tryReconnect,600);
   // Check URL hash for deep link (e.g. from SMS)
