@@ -93,21 +93,27 @@ class MainActivity : AppCompatActivity() {
                 val url = request.url.toString()
                 return when {
                     url.startsWith("sms:") || url.startsWith("smsto:") -> {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        startActivity(intent)
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                         true
                     }
                     url.startsWith("tel:") -> {
-                        val intent = Intent(Intent.ACTION_DIAL, Uri.parse(url))
-                        startActivity(intent)
+                        startActivity(Intent(Intent.ACTION_DIAL, Uri.parse(url)))
                         true
                     }
                     url.startsWith("mailto:") -> {
-                        val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                        startActivity(intent)
+                        startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                         true
                     }
                     else -> false
+                }
+            }
+
+            override fun onPageFinished(view: WebView, url: String) {
+                super.onPageFinished(view, url)
+                // Injecter le code si deep link reçu au démarrage
+                pendingCode?.let { code ->
+                    injectCode(code)
+                    pendingCode = null
                 }
             }
         }
@@ -116,6 +122,71 @@ class MainActivity : AppCompatActivity() {
 
         val adRequest = AdRequest.Builder().build()
         adView.loadAd(adRequest)
+
+        // Traiter le deep link de démarrage
+        handleIntent(intent)
+    }
+
+    private var pendingCode: String? = null
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        handleIntent(intent)
+    }
+
+    private fun handleIntent(intent: Intent?) {
+        if (intent == null) return
+        val uri = intent.data ?: return
+        val code = extractCode(uri) ?: return
+
+        // Si la WebView est prête, injecter directement
+        if (webView.url != null) {
+            injectCode(code)
+        } else {
+            // Sinon attendre que la page soit chargée (onPageFinished)
+            pendingCode = code
+        }
+    }
+
+    private fun extractCode(uri: Uri): String? {
+        // cinqcouronnes://join/XXXXXX
+        if (uri.scheme == "cinqcouronnes" && uri.host == "join") {
+            val path = uri.pathSegments.firstOrNull()
+            if (path?.length == 6) return path.uppercase()
+        }
+        // https://verby188.github.io/5-rois/join.html?code=XXXXXX
+        if (uri.scheme == "https") {
+            val code = uri.getQueryParameter("code")
+            if (code?.length == 6) return code.uppercase()
+        }
+        return null
+    }
+
+    private fun injectCode(code: String) {
+        webView.post {
+            webView.evaluateJavascript("""
+                (function() {
+                    try {
+                        // Aller sur l'écran multijoueur
+                        if(typeof show === 'function') show('s-net');
+                        // Remplir le code
+                        var inp = document.getElementById('join-code');
+                        if(inp) {
+                            inp.value = '$code';
+                            if(typeof checkCodeInput === 'function') checkCodeInput();
+                        }
+                        // Afficher la bannière d'invitation
+                        var box = document.getElementById('code-detected-box');
+                        if(box) {
+                            box.style.display = 'flex';
+                            box.className = 'code-detected';
+                            box.innerHTML = '<span>🎴</span><span>Invitation reçue — Code : <b>$code</b></span>';
+                            box.onclick = null;
+                        }
+                    } catch(e) { console.error('DeepLink error:', e); }
+                })();
+            """.trimIndent(), null)
+        }
     }
 
     override fun onBackPressed() {
