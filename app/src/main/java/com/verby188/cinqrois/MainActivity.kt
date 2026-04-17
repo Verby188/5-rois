@@ -14,11 +14,14 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
+import com.google.firebase.messaging.FirebaseMessaging
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var adView: AdView
+    private var pendingCode: String? = null
+    private var pendingNotifData: String? = null
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -49,9 +52,7 @@ class MainActivity : AppCompatActivity() {
 
         webView = WebView(this).apply {
             layoutParams = LinearLayout.LayoutParams(
-                LinearLayout.LayoutParams.MATCH_PARENT,
-                0,
-                1f
+                LinearLayout.LayoutParams.MATCH_PARENT, 0, 1f
             )
         }
 
@@ -110,24 +111,37 @@ class MainActivity : AppCompatActivity() {
 
             override fun onPageFinished(view: WebView, url: String) {
                 super.onPageFinished(view, url)
-                // Injecter le code si deep link reçu au démarrage
+                // Injecter le FCM token
+                getFcmTokenAndInject()
+                // Injecter le code deep link si en attente
                 pendingCode?.let { code ->
                     injectCode(code)
                     pendingCode = null
+                }
+                // Injecter les données de notification si en attente
+                pendingNotifData?.let { data ->
+                    injectNotification(data)
+                    pendingNotifData = null
                 }
             }
         }
 
         webView.loadUrl("file:///android_asset/index.html")
+        adView.loadAd(AdRequest.Builder().build())
 
-        val adRequest = AdRequest.Builder().build()
-        adView.loadAd(adRequest)
-
-        // Traiter le deep link de démarrage
         handleIntent(intent)
     }
 
-    private var pendingCode: String? = null
+    private fun getFcmTokenAndInject() {
+        FirebaseMessaging.getInstance().token.addOnCompleteListener { task ->
+            if (task.isSuccessful) {
+                val token = task.result
+                webView.post {
+                    webView.evaluateJavascript("if(typeof onFcmToken==='function')onFcmToken('$token');", null)
+                }
+            }
+        }
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
@@ -136,25 +150,36 @@ class MainActivity : AppCompatActivity() {
 
     private fun handleIntent(intent: Intent?) {
         if (intent == null) return
+
+        // Notification FCM avec données
+        val notifType = intent.getStringExtra("type")
+        if (notifType != null) {
+            val code = intent.getStringExtra("code") ?: ""
+            val from = intent.getStringExtra("from") ?: ""
+            val data = """{"type":"$notifType","code":"$code","from":"$from"}"""
+            if (::webView.isInitialized && webView.url != null) {
+                injectNotification(data)
+            } else {
+                pendingNotifData = data
+            }
+            return
+        }
+
+        // Deep link URL
         val uri = intent.data ?: return
         val code = extractCode(uri) ?: return
-
-        // Si la WebView est prête, injecter directement
-        if (webView.url != null) {
+        if (::webView.isInitialized && webView.url != null) {
             injectCode(code)
         } else {
-            // Sinon attendre que la page soit chargée (onPageFinished)
             pendingCode = code
         }
     }
 
     private fun extractCode(uri: Uri): String? {
-        // cinqcouronnes://join/XXXXXX
         if (uri.scheme == "cinqcouronnes" && uri.host == "join") {
             val path = uri.pathSegments.firstOrNull()
             if (path?.length == 6) return path.uppercase()
         }
-        // https://verby188.github.io/5-rois/join.html?code=XXXXXX
         if (uri.scheme == "https") {
             val code = uri.getQueryParameter("code")
             if (code?.length == 6) return code.uppercase()
@@ -165,28 +190,32 @@ class MainActivity : AppCompatActivity() {
     private fun injectCode(code: String) {
         webView.post {
             webView.evaluateJavascript("""
-                (function() {
-                    try {
-                        // Aller sur l'écran multijoueur
-                        if(typeof show === 'function') show('s-net');
-                        // Remplir le code
-                        var inp = document.getElementById('join-code');
-                        if(inp) {
-                            inp.value = '$code';
-                            if(typeof checkCodeInput === 'function') checkCodeInput();
-                        }
-                        // Afficher la bannière d'invitation
-                        var box = document.getElementById('code-detected-box');
-                        if(box) {
-                            box.style.display = 'flex';
-                            box.className = 'code-detected';
-                            box.innerHTML = '<span>🎴</span><span>Invitation reçue — Code : <b>$code</b></span>';
-                            box.onclick = null;
-                        }
-                    } catch(e) { console.error('DeepLink error:', e); }
+                (function(){
+                    try{
+                        if(typeof show==='function')show('s-net');
+                        var inp=document.getElementById('join-code');
+                        if(inp){inp.value='$code';if(typeof checkCodeInput==='function')checkCodeInput();}
+                        var box=document.getElementById('code-detected-box');
+                        if(box){box.style.display='flex';box.className='code-detected';box.innerHTML='<span>🎴</span><span>Invitation reçue — Code : <b>$code</b></span>';box.onclick=null;}
+                    }catch(e){}
                 })();
             """.trimIndent(), null)
         }
+    }
+
+    private fun injectNotification(data: String) {
+        webView.post {
+            webView.evaluateJavascript(
+                "if(typeof onFcmMessage==='function')onFcmMessage('${data.replace("'", "\\'")}');",
+                null
+            )
+        }
+    }
+
+    // Appelé par le service FCM quand notification reçue en foreground
+    fun onMessageReceived(data: Map<String, String>) {
+        val json = data.entries.joinToString(",") { "\"${it.key}\":\"${it.value}\"" }
+        injectNotification("{$json}")
     }
 
     override fun onBackPressed() {
