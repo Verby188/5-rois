@@ -1,18 +1,30 @@
-// Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyCPVnGohf_etSJYIFCSnWxjIB2RPX5rmnU",
-  authDomain: "u9-game.firebaseapp.com",
-  databaseURL: "https://u9-game-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "u9-game",
-  storageBucket: "u9-game.firebasestorage.app",
-  messagingSenderId: "1063280643089",
-  appId: "1:1063280643089:web:209c246dbbfaa8772cb5b0"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+{
+  "project_info": {
+    "project_number": "1063280643089",
+    "firebase_url": "https://u9-game-default-rtdb.europe-west1.firebasedatabase.app",
+    "project_id": "u9-game",
+    "storage_bucket": "u9-game.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063280643089:android:992ce5eaacd0f9bc2cb5b0",
+        "android_client_info": {
+          "package_name": "com.verby188.cinqrois"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZ6ZfCQrWoJnc3YjBFQ19Z9r9d0zkzeDg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
