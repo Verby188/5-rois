@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.util.DisplayMetrics
 import android.view.View
 import android.view.WindowManager
 import android.webkit.*
@@ -70,7 +71,12 @@ class MainActivity : AppCompatActivity() {
 
         adView = AdView(this).apply {
             adUnitId = "ca-app-pub-6145497382360748/7978022975"
-            setAdSize(AdSize.BANNER)
+            // Bannière adaptive — s'ajuste à la largeur de l'écran
+            val metrics = DisplayMetrics()
+            @Suppress("DEPRECATION")
+            windowManager.defaultDisplay.getMetrics(metrics)
+            val adWidth = (metrics.widthPixels / metrics.density).toInt()
+            setAdSize(AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(this@MainActivity, adWidth))
             layoutParams = LinearLayout.LayoutParams(
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
