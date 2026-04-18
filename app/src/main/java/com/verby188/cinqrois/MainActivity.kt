@@ -2,7 +2,9 @@ package com.verby188.cinqrois
 
 import android.annotation.SuppressLint
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
 import android.view.WindowManager
@@ -41,6 +43,16 @@ class MainActivity : AppCompatActivity() {
         )
 
         MobileAds.initialize(this)
+
+        // Demander la permission notifications (Android 13+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(
+                    arrayOf(android.Manifest.permission.POST_NOTIFICATIONS), 1001
+                )
+            }
+        }
 
         val layout = LinearLayout(this).apply {
             orientation = LinearLayout.VERTICAL
