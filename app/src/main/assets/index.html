@@ -2064,14 +2064,17 @@ async function inviteFriendToGame(uid,pseudo){
 // ══════════════════════════════════════════
 async function sendFCMNotification(token,title,body,data){
   const workerUrl=window.APP_CONFIG?.FCM_WORKER_URL;
-  if(!workerUrl){console.warn('FCM_WORKER_URL manquant dans config.js');return;}
+  if(!workerUrl){alert('DEBUG: FCM_WORKER_URL manquant dans config.js');return;}
+  alert('DEBUG: Envoi vers '+workerUrl+'\nToken: '+(token?token.substring(0,20)+'...':'VIDE'));
   try{
-    await fetch(workerUrl,{
+    const res=await fetch(workerUrl,{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({token,title,body:body||'',data:data||{}})
     });
-  }catch(e){console.error('FCM Worker error',e);}
+    const txt=await res.text();
+    alert('DEBUG: Réponse '+res.status+'\n'+txt.substring(0,200));
+  }catch(e){alert('DEBUG ERREUR: '+e.message);}
 }
 
 // Recevoir le token FCM depuis Android (appelé par MainActivity)
