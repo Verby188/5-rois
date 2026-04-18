@@ -10,11 +10,68 @@
 
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-:root{--felt:#0c3d1e;--gold:#c8a000;--gold2:#f0c830;--white:#fafaf5;--sh:rgba(0,0,0,.45)}
+:root{
+  --felt:#0c3d1e;--gold:#c8a000;--gold2:#f0c830;--white:#fafaf5;--sh:rgba(0,0,0,.45);
+  --overlay:rgba(0,0,0,.35);--overlay-bd:rgba(200,160,0,.22);
+  --text:#fff;--text-muted:rgba(255,255,255,.4);--text-dim:rgba(255,255,255,.25);
+  --inp-bg:rgba(255,255,255,.07);--inp-bd:rgba(255,255,255,.15);
+  --bg1:#0f4f28;--bg2:#0a3219;
+}
+/* ══ THÈME CLAIR ══ */
+[data-theme="light"]{
+  --felt:#ddeedd;--gold:#8a6500;--gold2:#b8870b;--white:#1a1a1a;--sh:rgba(0,0,0,.18);
+  --overlay:rgba(255,255,255,.82);--overlay-bd:rgba(100,130,100,.3);
+  --text:#1a2e1a;--text-muted:rgba(0,0,0,.5);--text-dim:rgba(0,0,0,.3);
+  --inp-bg:rgba(0,0,0,.06);--inp-bd:rgba(0,0,0,.18);
+  --bg1:#c8e6c9;--bg2:#b9d9ba;
+}
+[data-theme="light"] body{color:var(--text)}
+[data-theme="light"] .scard,[data-theme="light"] .auth-box,[data-theme="light"] .room-code-box{background:var(--overlay);border-color:var(--overlay-bd)}
+[data-theme="light"] .lbtn{background:rgba(0,0,0,.07);border-color:rgba(0,0,0,.12);color:var(--text)}
+[data-theme="light"] .lbtn:hover{background:rgba(139,101,0,.1);border-color:var(--gold)}
+[data-theme="light"] .lbtn-sub{color:var(--text-muted)}
+[data-theme="light"] .name-input,[data-theme="light"] .code-input,[data-theme="light"] .auth-inp,[data-theme="light"] .search-inp{background:var(--inp-bg);border-color:var(--inp-bd);color:var(--text)}
+[data-theme="light"] .hdr,[data-theme="light"] .hand-wrap,[data-theme="light"] .mz{background:rgba(0,0,0,.07);border-color:rgba(0,0,0,.1)}
+[data-theme="light"] .msgb{background:rgba(0,0,0,.08);color:var(--text)}
+[data-theme="light"] .sc{border-color:rgba(0,0,0,.1)}
+[data-theme="light"] .w-player{background:rgba(0,0,0,.06);border-color:rgba(0,0,0,.08)}
+[data-theme="light"] #s-friends,[data-theme="light"] #s-rules{color:var(--text)}
+[data-theme="light"] .friend-row{border-color:rgba(0,0,0,.08)}
+[data-theme="light"] .back-btn{color:var(--text-muted);border-color:rgba(0,0,0,.15)}
+[data-theme="light"] .sub{color:var(--text-muted)}
+[data-theme="light"] .rules-hint{color:var(--text-dim)}
+[data-theme="light"] .cback{background:repeating-linear-gradient(45deg,#2a4a8e,#2a4a8e 3px,#1e3a7a 3px,#1e3a7a 6px)}
+
+/* ══ TABLETTE ══ */
+@media(min-width:768px){
+  h1{font-size:5rem}
+  .scard{padding:2rem;gap:1.3rem}
+  .lbtn{padding:1.3rem 1.8rem;font-size:1.05rem}
+  .lbtn-sub{font-size:.78rem}
+  .card{width:80px;height:114px}
+  .cv{font-size:14px}.cs{font-size:12px}.cm{font-size:34px}
+  .card.sm{width:50px;height:70px}
+  .btn{font-size:.88rem;padding:.65rem 1.4rem}
+  .auth-inp,.name-input,.search-inp{font-size:1rem;padding:.7rem 1rem}
+  .auth-box{max-width:420px;padding:1.8rem}
+  .popup{min-width:360px;padding:2rem}
+  .msgb{font-size:.88rem}
+  .hlbl,.rlbl{font-size:.88rem}
+  .sc{min-width:60px}.sc-nm{font-size:.65rem}.sc-pt{font-size:1rem}
+}
+
+/* ══ BOUTONS THÈME & LANGUE ══ */
+.ui-toggle-btn{position:fixed;z-index:300;background:rgba(0,0,0,.35);border:1px solid rgba(200,160,0,.25);
+  border-radius:20px;padding:.3rem .65rem;font-size:.75rem;cursor:pointer;color:var(--gold2);
+  transition:.2s;backdrop-filter:blur(4px)}
+.ui-toggle-btn:hover{background:rgba(200,160,0,.15)}
+#theme-btn{bottom:4.5rem;right:.7rem}
+#lang-btn{bottom:2.8rem;right:.7rem}
+[data-theme="light"] .ui-toggle-btn{background:rgba(255,255,255,.7);color:var(--gold)}
 body{background:var(--felt);
-  background-image:radial-gradient(ellipse 120% 100% at 50% 0%,#0f4f28,#0a3219 60%),
+  background-image:radial-gradient(ellipse 120% 100% at 50% 0%,var(--bg1),var(--bg2) 60%),
     repeating-linear-gradient(45deg,transparent,transparent 18px,rgba(0,0,0,.04) 18px,rgba(0,0,0,.04) 19px);
-  min-height:100vh;font-family:'Crimson Pro',Georgia,serif;color:#fff;
+  min-height:100vh;font-family:'Crimson Pro',Georgia,serif;color:var(--text);
   display:flex;flex-direction:column;align-items:center}
 
 /* ══ NAV ══ */
@@ -134,6 +191,7 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 .sc.gout{border-color:#43a047;background:rgba(67,160,71,.12)}
 .sc-nm{color:rgba(255,255,255,.5);font-size:.6rem;font-family:'Cinzel',serif}
 .sc-pt{font-family:'Cinzel',serif;font-size:.88rem}
+.sc-rd{font-size:.55rem;font-family:'Cinzel',serif;margin-top:1px}
 .opp-area{display:flex;justify-content:center;gap:1rem;flex-wrap:wrap;padding:.15rem 0}
 .opp{display:flex;flex-direction:column;align-items:center;gap:.22rem}
 .opp-nm{font-family:'Cinzel',serif;font-size:.65rem;color:rgba(255,255,255,.42);display:flex;align-items:center;gap:.3rem}
@@ -399,6 +457,25 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 
 <canvas id="confetti-canvas"></canvas>
 <div id="offline-banner">📡 Connexion perdue — Vérifiez votre réseau</div>
+<button class="ui-toggle-btn" id="theme-btn" onclick="toggleTheme()" title="Changer de thème">🌙</button>
+<button class="ui-toggle-btn" id="lang-btn" onclick="toggleLang()" title="Change language">🇫🇷</button>
+
+<!-- ══ PROFIL MODAL ══ -->
+<div id="profile-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:1.5rem">
+  <div class="scard" style="max-width:340px;width:100%;position:relative">
+    <button onclick="closeProfileModal()" style="position:absolute;top:.7rem;right:.9rem;background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer">✕</button>
+    <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.5rem">
+      <div id="pm-avatar" style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Cinzel,serif;font-size:1.2rem;font-weight:700;flex-shrink:0"></div>
+      <div>
+        <div id="pm-pseudo" style="font-family:Cinzel,serif;color:var(--gold);font-size:1rem"></div>
+        <div id="pm-email" style="font-size:.7rem;color:var(--text-muted)"></div>
+      </div>
+    </div>
+    <div id="pm-stats" style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.3rem 0"></div>
+    <div id="pm-history" style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem"></div>
+    <button class="gbtn" style="margin-top:.5rem;background:linear-gradient(135deg,#b71c1c,#e53935)" onclick="doLogout()">Se déconnecter</button>
+  </div>
+</div>
 
 <!-- ══ TUTORIEL ══ -->
 <div id="tutorial-overlay">
@@ -852,7 +929,7 @@ async function fbDel(path){
 function doCreate(){
   const name=document.getElementById('host-name').value.trim()||'Hôte';
   NET.mode='host';NET.expectedHumans=NET_EXP;NET.numAI=NET_AI;
-  NET._hostName=name;NET._guestNames={};
+  NET._hostName=name;NET._guestNames={};NET._invitedUids=new Set();
   show('s-waiting');
   document.getElementById('w-code-box').style.display='none';
   document.getElementById('w-msg').textContent='Création de la salle...';
@@ -909,7 +986,7 @@ function _startHostPolling(){
             NET._guestNames[i]=(g&&g.name)||(('Joueur ')+(i+1));
             updateWaitingList();
             checkCanStart();
-            fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+i,{t:'welcome',playerIdx:i,expectedHumans:NET.expectedHumans,numAI:NET.numAI});
+            fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+i,{t:'welcome',playerIdx:i,hostName:NET._hostName,expectedHumans:NET.expectedHumans,numAI:NET.numAI});
           }
         }
       }
@@ -1035,7 +1112,25 @@ function _startGuestPolling(gIdx){
     const s=JSON.stringify(state);
     if(s===lastState)return;
     lastState=s;
-    if(state.t==='welcome'){document.getElementById('w-msg').textContent='Connecté ! En attente du démarrage...';return;}
+    if(state.t==='welcome'){
+      const hostName=state.hostName||'Hôte';
+      document.getElementById('w-msg').textContent=`Connecté ! En attente que ${hostName} démarre...`;
+      // Afficher l'hôte dans la liste
+      const wlist=document.getElementById('w-list');
+      if(wlist&&!wlist.querySelector('.w-host-shown')){
+        wlist.innerHTML=`<div class="w-player w-host-shown">
+          <div class="w-pdot" style="background:${pc(0)}"></div>
+          <span class="w-pname">${hostName} (Hôte)</span>
+          <span class="w-status ok">Connecté</span>
+        </div>
+        <div class="w-player">
+          <div class="w-pdot" style="background:${pc(state.playerIdx)}"></div>
+          <span class="w-pname">Vous</span>
+          <span class="w-status ok">Connecté</span>
+        </div>`;
+      }
+      return;
+    }
     if(state.t==='state'){
       const wasGame=GS!==null;
       GS=state;
@@ -1074,6 +1169,7 @@ function buildPkt(pi){
   return{
     t:'state',
     round:G.round,bv:bv,phase:G.phase,cur:G.cur,goingOut:G.goingOut,
+    jokerCanTake:G.jokerCanTake,
     lastTurnsArr:[...G.lastTurns],deckCount:G.deck.length,
     discardTop:G.discard.length?Object.assign({},G.discard[G.discard.length-1]):null,
     msg:G.msg,msgType:G.msgType,
@@ -1127,7 +1223,8 @@ function startLocal(){
 
 function startGame(playersConfig){
   G={round:1,phase:'draw',deck:[],discard:[],players:[],cur:0,goingOut:-1,
-     lastTurns:new Set(),selCard:null,meldGroups:[],sortBy:null,msg:'',msgType:''};
+     lastTurns:new Set(),selCard:null,meldGroups:[],sortBy:null,msg:'',msgType:'',
+     jokerCanTake:-1}; // -1=libre, idx=réservé, -2=bloqué
   playersConfig.forEach(sp=>{
     G.players.push({...sp,hand:[],roundScore:0,totalScore:0});
   });
@@ -1138,7 +1235,7 @@ function startGame(playersConfig){
 function startRound(){
   const deck=createDeck();shuffle(deck);
   G.deck=deck;G.discard=[];G.goingOut=-1;G.lastTurns=new Set();
-  G.selCard=null;G.meldGroups=[];G.sortBy=null;G.exposedMelds=null;G.exposedBy=null;
+  G.selCard=null;G.meldGroups=[];G.sortBy=null;G.exposedMelds=null;G.exposedBy=null;G.jokerCanTake=-1;
   const hs=G.round+2,bv=getBV();
   for(const p of G.players){p.hand=G.deck.splice(0,hs);p.hand.sort((a,b)=>isWild(a,bv)!==isWild(b,bv)?(isWild(a,bv)?1:-1):a.val-b.val||(SORD[a.suit]-SORD[b.suit]));p.roundScore=0;}
   G.discard.push(G.deck.splice(0,1)[0]);
@@ -1161,7 +1258,9 @@ function doAI(){
   const p=G.players[G.cur],bv=getBV();
   const top=G.discard[G.discard.length-1];
   let drawn;
-  if(aiWD(p.hand,top,bv)){drawn=G.discard.pop();setMsg(`${p.name} prend la défausse (${dv(drawn.val)}${drawn.joker?'★':drawn.suit})`,'');}
+  if(aiWD(p.hand,top,bv)&&!(top&&top.joker&&G.jokerCanTake!==-1&&G.jokerCanTake!==G.cur)){
+    drawn=G.discard.pop();G.jokerCanTake=-1;setMsg(`${p.name} prend la défausse (${dv(drawn.val)}${drawn.joker?'★':drawn.suit})`,'');
+  }
   else{drawn=deckDraw();setMsg(`${p.name} pioche…`,'');}
   p.hand.push(drawn);render();broadcast();
   setTimeout(()=>{
@@ -1174,6 +1273,7 @@ function doAI(){
       render();broadcast();setTimeout(advance,1600);
     }else{
       const di=aiBD(p.hand,bv);const disc=p.hand.splice(di,1)[0];G.discard.push(disc);
+      if(disc.joker){G.jokerCanTake=(G.cur+1)%G.players.length;}else{G.jokerCanTake=-1;}
       if(G.goingOut!==-1){const{score}=bestMelds(p.hand,bv);p.roundScore=score;G.lastTurns.add(G.cur);}
       setMsg(`${p.name} défausse ${disc.joker?'Joker':dv(disc.val)+disc.suit}`,'');
       render();broadcast();setTimeout(advance,1000);
@@ -1183,6 +1283,8 @@ function doAI(){
 
 function advance(){
   _stopTurnTimer();
+  // Si le joker était réservé et que le joueur l'a ignoré → le bloquer pour tous
+  if(G.jokerCanTake>=0&&G.jokerCanTake===G.cur){G.jokerCanTake=-2;}
   if(G.goingOut!==-1){
     let found=-1;
     for(let i=1;i<G.players.length;i++){const p=(G.cur+i)%G.players.length;if(!G.lastTurns.has(p)){found=p;break}}
@@ -1307,8 +1409,14 @@ function humanDrawDeck(){
 }
 function humanDrawDiscard(){
   if(G.phase!=='draw'||!G.discard.length)return;
+  const top=G.discard[G.discard.length-1];
+  // Règle du Joker : seul le joueur suivant peut le prendre
+  if(top.joker&&G.jokerCanTake!==-1&&G.jokerCanTake!==G.cur){
+    setMsg('Ce Joker est réservé au joueur suivant !','alert');render();return;
+  }
   playDrawSound();
   const card=G.discard.pop();G.players[G.cur].hand.push(card);
+  G.jokerCanTake=-1; // joker pris, flag réinitialisé
   G.phase='act';G.selCard=null;
   setMsg(`Tu prends ${card.joker?'un Joker':dv(card.val)+card.suit}. Sélectionne une carte à défausser.`,'');
   if(G.sortBy)applySort();else{render();broadcast();}
@@ -1336,6 +1444,9 @@ function humanDiscard(){
   p.hand=p.hand.filter(c=>c.id!==G.selCard);
   G.meldGroups=G.meldGroups.map(g=>g.filter(id=>id!==G.selCard)).filter(g=>g.length>0);
   G.discard.push(card);
+  // Règle du Joker : réserver la prise au joueur suivant
+  if(card.joker){G.jokerCanTake=(G.cur+1)%G.players.length;}
+  else{G.jokerCanTake=-1;}
   if(G.goingOut!==-1){const{score}=bestMelds(p.hand,bv);p.roundScore=score;setMsg(`Défausse ${card.joker?'Joker':dv(card.val)+card.suit}. Pénalité: ${score} pts.`,'');G.lastTurns.add(G.cur);}
   else setMsg(`Tu défausses ${card.joker?'Joker':dv(card.val)+card.suit}.`,'');
   G.selCard=null;G.meldGroups=[];render();broadcast();
@@ -1387,12 +1498,17 @@ function applyAction(msg,guestIdx){
     setMsg(`${p.name} pioche une carte.`,'');render();broadcast();
   }else if(msg.action==='drawDiscard'){
     if(G.phase!=='draw'||!G.discard.length)return;
-    const card=G.discard.pop();p.hand.push(card);G.phase='act';G.selCard=null;
+    const top=G.discard[G.discard.length-1];
+    if(top&&top.joker&&G.jokerCanTake!==-1&&G.jokerCanTake!==guestIdx){
+      fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+guestIdx,{t:'error',msg:'Ce Joker est réservé au joueur suivant !'});return;
+    }
+    const card=G.discard.pop();p.hand.push(card);G.jokerCanTake=-1;G.phase='act';G.selCard=null;
     setMsg(`${p.name} prend la défausse.`,'');render();broadcast();
   }else if(msg.action==='discard'){
     const card=p.hand.find(c=>String(c.id)===String(msg.cardId));if(!card)return;
     msg.cardId=card.id;
     p.hand=p.hand.filter(c=>c.id!==msg.cardId);G.discard.push(card);
+    if(card.joker){G.jokerCanTake=(G.cur+1)%G.players.length;}else{G.jokerCanTake=-1;}
     if(G.goingOut!==-1){const{score}=bestMelds(p.hand,bv);p.roundScore=score;G.lastTurns.add(G.cur);}
     setMsg(`${p.name} défausse ${card.joker?'Joker':dv(card.val)+card.suit}.`,'');
     render();broadcast();setTimeout(advance,600);
@@ -1442,7 +1558,15 @@ function revealHand(){
 function isGuestTurn(){return GS&&GS.cur===GS.myIdx&&GS.phase!=='round_end'&&!GS.gameOver}
 
 function guestOnDeckClick(){if(GS&&GS.phase==='draw'&&isGuestTurn())gsend({action:'drawDeck'})}
-function guestOnDiscClick(){if(GS&&GS.phase==='draw'&&isGuestTurn())gsend({action:'drawDiscard'})}
+function guestOnDiscClick(){
+  if(!GS||GS.phase!=='draw'||!isGuestTurn())return;
+  const top=GS.discardTop;
+  if(top&&top.joker&&GS.jokerCanTake!==-1&&GS.jokerCanTake!==GS.myIdx){
+    document.getElementById('msgb').textContent='Ce Joker est réservé au joueur suivant !';
+    document.getElementById('msgb').className='msgb alert';return;
+  }
+  gsend({action:'drawDiscard'});
+}
 function guestSelCard(cid){if(!isGuestTurn()||GS.phase!=='act')return;GSL.selCard=GSL.selCard===cid?null:cid;renderGuest()}
 function guestToGrp(gi){
   const gIds=new Set(GSL.meldGroups.flat());if(GSL.selCard===null||gIds.has(GSL.selCard))return;
@@ -1515,14 +1639,17 @@ function render(){
   const inAct=G.phase==='act'&&isMyTurn;
   const gIds=new Set(G.meldGroups.flat());
 
-  // Header
+  // Header scores — clic pour voir le détail de la manche
   document.getElementById('rlbl').textContent=`Manche ${G.round}/11`;
   document.getElementById('blbl').textContent=`Bonus: ${dv(bv)}`;
   const sc=document.getElementById('scores');sc.innerHTML='';
   G.players.forEach((p,i)=>{
     const ch=document.createElement('div');ch.className='sc'+(i===G.cur?' active':'')+(i===G.goingOut?' gout':'');
     ch.style.borderColor=i===G.cur?p.color:'';
-    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div><div class="sc-pt">${p.totalScore}</div>`;sc.appendChild(ch);
+    const roundInfo=G.phase==='act'&&i===G.cur?`<div class="sc-rd" style="color:${p.color}66">ce tour</div>`
+      :(p.roundScore>0?`<div class="sc-rd" style="color:#ef9a9a66">+${p.roundScore}</div>`:'');
+    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div><div class="sc-pt">${p.totalScore}</div>${roundInfo}`;
+    sc.appendChild(ch);
   });
 
   // Opponents (all except my player; during AI turn in local, skip host player 0)
@@ -1553,7 +1680,15 @@ function render(){
 
   // Discard
   const disp=document.getElementById('disc-pile');disp.innerHTML='';
-  if(G.discard.length){const top=G.discard[G.discard.length-1];const tc=mkCEl(top,bv,false);if(G.phase==='draw'&&isMyTurn){tc.style.cursor='pointer';tc.onclick=onDiscClick;}else tc.style.cursor='default';disp.appendChild(tc);}
+  if(G.discard.length){
+    const top=G.discard[G.discard.length-1];const tc=mkCEl(top,bv,false);
+    const jokerBlocked=top.joker&&G.jokerCanTake!==-1&&G.jokerCanTake!==G.cur;
+    if(G.phase==='draw'&&isMyTurn&&!jokerBlocked){tc.style.cursor='pointer';tc.onclick=onDiscClick;}
+    else tc.style.cursor='default';
+    if(jokerBlocked){tc.title='Joker réservé au joueur suivant';tc.style.opacity='.45';}
+    disp.appendChild(tc);
+    if(jokerBlocked){const lbl=document.createElement('div');lbl.style.cssText='font-size:.55rem;color:#ef9a9a;text-align:center;margin-top:2px';lbl.textContent='🔒 Réservé';disp.appendChild(lbl);}
+  }
   else disp.innerHTML='<div class="eslot">Vide</div>';
 
   // Message
@@ -1650,14 +1785,16 @@ function renderGuest(){
   const gIds=new Set(GSL.meldGroups.flat());
   const myP=GS.players[myIdx];
 
-  // Header
+  // Header scores
   document.getElementById('rlbl').textContent=`Manche ${GS.round}/11`;
   document.getElementById('blbl').textContent=`Bonus: ${dv(bv)}`;
   const sc=document.getElementById('scores');sc.innerHTML='';
   GS.players.forEach((p,i)=>{
     const ch=document.createElement('div');ch.className='sc'+(i===GS.cur?' active':'')+(i===GS.goingOut?' gout':'');
     ch.style.borderColor=i===GS.cur?p.color:'';
-    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div><div class="sc-pt">${p.totalScore}</div>`;sc.appendChild(ch);
+    const roundInfo=p.roundScore>0?`<div class="sc-rd" style="color:#ef9a9a66">+${p.roundScore}</div>`:'';
+    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div><div class="sc-pt">${p.totalScore}</div>${roundInfo}`;
+    sc.appendChild(ch);
   });
 
   // Opponents
@@ -1687,7 +1824,15 @@ function renderGuest(){
 
   // Discard
   const disp=document.getElementById('disc-pile');disp.innerHTML='';
-  if(GS.discardTop){const tc=mkCEl(GS.discardTop,bv,false);if(GS.phase==='draw'&&myTurn){tc.style.cursor='pointer';tc.onclick=guestOnDiscClick;}else tc.style.cursor='default';disp.appendChild(tc);}
+  if(GS.discardTop){
+    const tc=mkCEl(GS.discardTop,bv,false);
+    const jokerBlocked=GS.discardTop.joker&&GS.jokerCanTake!==-1&&GS.jokerCanTake!==GS.myIdx;
+    if(GS.phase==='draw'&&myTurn&&!jokerBlocked){tc.style.cursor='pointer';tc.onclick=guestOnDiscClick;}
+    else tc.style.cursor='default';
+    if(jokerBlocked){tc.title='Joker réservé au joueur suivant';tc.style.opacity='.45';}
+    disp.appendChild(tc);
+    if(jokerBlocked){const lbl=document.createElement('div');lbl.style.cssText='font-size:.55rem;color:#ef9a9a;text-align:center;margin-top:2px';lbl.textContent='🔒 Réservé';disp.appendChild(lbl);}
+  }
   else disp.innerHTML='<div class="eslot">Vide</div>';
 
   // Message
@@ -2265,6 +2410,29 @@ const AUTH_URL='https://identitytoolkit.googleapis.com/v1/accounts';
 // Clés chargées depuis config.js (fichier séparé, non versionné)
 const FIREBASE_KEY = window.APP_CONFIG?.FIREBASE_KEY || '';
 
+// Rafraîchir le token Firebase si expiré (durée de vie : 1h)
+async function ensureFreshToken(){
+  if(!CUR_USER||!CUR_USER.refreshToken)return;
+  if(CUR_USER.tokenExpiry&&Date.now()<CUR_USER.tokenExpiry-60000)return; // encore valide
+  try{
+    const r=await fetch(`https://securetoken.googleapis.com/v1/token?key=${FIREBASE_KEY}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/x-www-form-urlencoded'},
+      body:`grant_type=refresh_token&refresh_token=${CUR_USER.refreshToken}`
+    });
+    const d=await r.json();
+    if(d.id_token){
+      CUR_USER.idToken=d.id_token;
+      CUR_USER.refreshToken=d.refresh_token;
+      CUR_USER.tokenExpiry=Date.now()+3600000;
+      // Mettre à jour localStorage
+      const saved=JSON.parse(localStorage.getItem('cinqr_user')||'{}');
+      saved.refreshToken=d.refresh_token;
+      localStorage.setItem('cinqr_user',JSON.stringify(saved));
+    }
+  }catch(e){console.warn('Token refresh failed',e);}
+}
+
 let CUR_USER=null; // {uid, email, pseudo, idToken, fcmToken}
 
 function switchAuthTab(tab){
@@ -2300,8 +2468,8 @@ async function doAuth(){
       await fbSet('pseudos/'+pseudo.toLowerCase(),d.localId);
     }
     const profile=await fbGet('users/'+d.localId)||{};
-    CUR_USER={uid:d.localId,email,pseudo:profile.pseudo||pseudo||email.split('@')[0],idToken:d.idToken,fcmToken:null};
-    localStorage.setItem('cinqr_user',JSON.stringify({uid:d.localId,email,pseudo:CUR_USER.pseudo}));
+    CUR_USER={uid:d.localId,email,pseudo:profile.pseudo||pseudo||email.split('@')[0],idToken:d.idToken,refreshToken:d.refreshToken,tokenExpiry:Date.now()+3600000,fcmToken:null};
+    localStorage.setItem('cinqr_user',JSON.stringify({uid:d.localId,email,pseudo:CUR_USER.pseudo,refreshToken:d.refreshToken}));
     onUserLoggedIn();
   }catch(e){errEl.textContent='Erreur réseau. Réessayez.';document.getElementById('auth-btn').textContent=isReg?'Créer le compte':'Se connecter';}
 }
@@ -2332,20 +2500,168 @@ function onUserLoggedIn(){
   // Mettre à jour le FCM token si disponible
   if(window._fcmToken)updateFcmToken(window._fcmToken);
   startOnlineStatusPolling();
+  ensureFreshToken();
+  if(!window._tokenRefreshInterval)
+    window._tokenRefreshInterval=setInterval(ensureFreshToken,1800000);
   loadFriends();
   show('s-lobby');
 }
 
 function showProfile(){
   if(!CUR_USER)return;
-  if(confirm(`Connecté en tant que ${CUR_USER.pseudo}\nSe déconnecter ?`)){
-    if(_onlineInterval){clearInterval(_onlineInterval);_onlineInterval=null;}
-    CUR_USER=null;
-    localStorage.removeItem('cinqr_user');
-    document.getElementById('lobby-profile').style.display='none';
-    document.getElementById('friends-btn').style.display='none';
-    show('s-auth');
+  // Ouvrir le modal de profil avec stats
+  document.getElementById('pm-pseudo').textContent=CUR_USER.pseudo;
+  document.getElementById('pm-email').textContent=CUR_USER.email;
+  const av=document.getElementById('pm-avatar');
+  av.textContent=CUR_USER.pseudo[0].toUpperCase();
+  av.style.background=pc(CUR_USER.pseudo.charCodeAt(0)%8);
+  // Calculer les stats
+  const hist=getGameHistory();
+  const stats=computeStats(hist);
+  const pm=document.getElementById('pm-stats');
+  pm.innerHTML=`
+    <div style="flex:1;min-width:80px;background:var(--inp-bg);border-radius:8px;padding:.5rem;text-align:center">
+      <div style="font-family:Cinzel,serif;font-size:1.1rem;color:var(--gold2)">${stats.played}</div>
+      <div style="font-size:.6rem;color:var(--text-muted)">${_T('parties')}</div>
+    </div>
+    <div style="flex:1;min-width:80px;background:var(--inp-bg);border-radius:8px;padding:.5rem;text-align:center">
+      <div style="font-family:Cinzel,serif;font-size:1.1rem;color:#66bb6a">${stats.wins}</div>
+      <div style="font-size:.6rem;color:var(--text-muted)">${_T('victoires')}</div>
+    </div>
+    <div style="flex:1;min-width:80px;background:var(--inp-bg);border-radius:8px;padding:.5rem;text-align:center">
+      <div style="font-family:Cinzel,serif;font-size:1.1rem;color:var(--gold2)">${stats.avgScore}</div>
+      <div style="font-size:.6rem;color:var(--text-muted)">${_T('moy. pts')}</div>
+    </div>
+    <div style="flex:1;min-width:80px;background:var(--inp-bg);border-radius:8px;padding:.5rem;text-align:center">
+      <div style="font-family:Cinzel,serif;font-size:1.1rem;color:#42a5f5">${stats.best===Infinity?'—':stats.best}</div>
+      <div style="font-size:.6rem;color:var(--text-muted)">${_T('record')}</div>
+    </div>`;
+  // Historique
+  const histEl=document.getElementById('pm-history');
+  if(hist.length){
+    histEl.innerHTML='<div style="margin-bottom:.3rem;font-size:.68rem;color:var(--text-muted)">'+_T('Dernières parties')+'</div>'+
+      hist.slice(0,5).map(h=>{
+        const me=h.players.find(p=>p.name===CUR_USER.pseudo);
+        const rank=me?h.players.filter(p=>p.score<=me.score).length:'-';
+        const date=new Date(h.date).toLocaleDateString();
+        return`<div style="display:flex;justify-content:space-between;padding:.2rem 0;border-bottom:1px solid var(--inp-bd)">
+          <span>${date}</span><span>${me?me.score+' pts':'—'}</span>
+          <span style="color:${rank===1?'#f0c830':'var(--text-muted)'}">${rank===1?'🥇':rank+'e'}</span>
+        </div>`;
+      }).join('');
+  } else {
+    histEl.innerHTML='<div style="color:var(--text-muted);font-size:.75rem">'+_T('Aucune partie jouée')+'</div>';
   }
+  document.getElementById('profile-modal').style.display='flex';
+}
+
+function closeProfileModal(){
+  document.getElementById('profile-modal').style.display='none';
+}
+
+function doLogout(){
+  closeProfileModal();
+  if(_onlineInterval){clearInterval(_onlineInterval);_onlineInterval=null;}
+  CUR_USER=null;
+  localStorage.removeItem('cinqr_user');
+  document.getElementById('lobby-profile').style.display='none';
+  document.getElementById('friends-btn').style.display='none';
+  show('s-auth');
+}
+
+function computeStats(hist){
+  if(!hist.length)return{played:0,wins:0,avgScore:'—',best:Infinity};
+  let wins=0,totalScore=0,best=Infinity;
+  hist.forEach(h=>{
+    const me=h.players.find(p=>p.name===CUR_USER.pseudo);
+    if(!me)return;
+    const myScore=me.score;
+    totalScore+=myScore;
+    if(best>myScore)best=myScore;
+    const won=h.players.every(p=>p.name===CUR_USER.pseudo||p.score>=myScore);
+    if(won)wins++;
+  });
+  return{played:hist.length,wins,avgScore:Math.round(totalScore/hist.length),best};
+}
+
+// ══ THÈME ══
+function toggleTheme(){
+  const isLight=document.documentElement.getAttribute('data-theme')==='light';
+  const newTheme=isLight?'dark':'light';
+  applyTheme(newTheme);
+  localStorage.setItem('cinqr_theme',newTheme);
+}
+function applyTheme(theme){
+  document.documentElement.setAttribute('data-theme',theme==='light'?'light':'');
+  document.getElementById('theme-btn').textContent=theme==='light'?'☀️':'🌙';
+}
+
+// ══ LANGUE ══
+const LANGS={
+  fr:{
+    'Jouer en local':'Jouer en local','Même appareil, 1 à 8 joueurs avec passation':'Même appareil, 1 à 8 joueurs avec passation',
+    'Multijoueur en ligne':'Multijoueur en ligne','Chaque joueur sur son propre appareil':'Chaque joueur sur son propre appareil',
+    'Règles du jeu':'Règles du jeu','Suites, familles, Bonus et stratégies':'Suites, familles, Bonus et stratégies',
+    'Amis':'Amis','Gérer votre liste d\'amis':'Gérer votre liste d\'amis',
+    'Connexion':'Connexion','Inscription':'Inscription','Se connecter':'Se connecter','Créer le compte':'Créer le compte',
+    'Continuer sans compte':'Continuer sans compte',
+    'parties':'parties','victoires':'victoires','moy. pts':'moy. pts','record':'record',
+    'Dernières parties':'Dernières parties','Aucune partie jouée':'Aucune partie jouée',
+    'Créer une partie':'Créer une partie','Rejoindre une partie':'Rejoindre une partie',
+    'Créer la partie':'Créer la partie','Rejoindre →':'Rejoindre →',
+    'Adversaires IA':'Adversaires IA','Ton nom':'Ton nom',
+  },
+  en:{
+    'Jouer en local':'Play locally','Même appareil, 1 à 8 joueurs avec passation':'Same device, 1–8 players',
+    'Multijoueur en ligne':'Online multiplayer','Chaque joueur sur son propre appareil':'Each player on their own device',
+    'Règles du jeu':'Game rules','Suites, familles, Bonus et stratégies':'Runs, sets, Bonus and strategies',
+    'Amis':'Friends','Gérer votre liste d\'amis':'Manage your friend list',
+    'Connexion':'Log in','Inscription':'Sign up','Se connecter':'Log in','Créer le compte':'Create account',
+    'Continuer sans compte':'Continue without account',
+    'parties':'games','victoires':'wins','moy. pts':'avg pts','record':'best',
+    'Dernières parties':'Recent games','Aucune partie jouée':'No games played',
+    'Créer une partie':'Create a game','Rejoindre une partie':'Join a game',
+    'Créer la partie':'Create game','Rejoindre →':'Join →',
+    'Adversaires IA':'AI opponents','Ton nom':'Your name',
+  }
+};
+let _lang='fr';
+function _T(key){return(LANGS[_lang]||LANGS.fr)[key]||key;}
+function toggleLang(){
+  _lang=_lang==='fr'?'en':'fr';
+  localStorage.setItem('cinqr_lang',_lang);
+  applyLang();
+}
+function applyLang(){
+  document.getElementById('lang-btn').textContent=_lang==='fr'?'🇫🇷':'🇬🇧';
+  // Lobby buttons
+  const btns=document.querySelectorAll('.lbtn');
+  const keys=[
+    ['Jouer en local','Même appareil, 1 à 8 joueurs avec passation'],
+    ['Multijoueur en ligne','Chaque joueur sur son propre appareil'],
+    ['Règles du jeu','Suites, familles, Bonus et stratégies'],
+    ['Amis','Gérer votre liste d\'amis'],
+  ];
+  btns.forEach((btn,i)=>{
+    if(!keys[i])return;
+    const divs=btn.querySelectorAll('div > div');
+    if(divs[0])divs[0].textContent=_T(keys[i][0]);
+    if(divs[1])divs[1].textContent=_T(keys[i][1]);
+  });
+  // Auth tabs
+  const tLogin=document.getElementById('tab-login');
+  const tReg=document.getElementById('tab-register');
+  if(tLogin)tLogin.textContent=_T('Connexion');
+  if(tReg)tReg.textContent=_T('Inscription');
+  const authBtn=document.getElementById('auth-btn');
+  if(authBtn)authBtn.textContent=tLogin&&tLogin.classList.contains('on')?_T('Se connecter'):_T('Créer le compte');
+  const authSkip=document.querySelector('.auth-skip');
+  if(authSkip)authSkip.textContent=_T('Continuer sans compte');
+  // Network screen
+  const hostNameInp=document.getElementById('host-name');
+  if(hostNameInp)hostNameInp.placeholder=_T('Ton nom');
+  const joinNameInp=document.getElementById('join-name');
+  if(joinNameInp)joinNameInp.placeholder=_T('Ton nom');
 }
 
 async function updateFcmToken(token){
@@ -2360,7 +2676,7 @@ function tryRestoreSession(){
   if(!saved)return false;
   try{
     const u=JSON.parse(saved);
-    CUR_USER={uid:u.uid,email:u.email,pseudo:u.pseudo,idToken:null,fcmToken:null};
+    CUR_USER={uid:u.uid,email:u.email,pseudo:u.pseudo,idToken:null,refreshToken:u.refreshToken||null,tokenExpiry:0,fcmToken:null};
     onUserLoggedIn();
     return true;
   }catch(e){localStorage.removeItem('cinqr_user');return false;}
@@ -2398,11 +2714,19 @@ async function searchFriend(){
 
 async function sendFriendRequest(toUid,toPseudo){
   if(!CUR_USER)return;
+  // Vérifier si une demande existe déjà (expéditeur peut annuler)
+  const existing=await fbGet('users/'+toUid+'/friendRequests/'+CUR_USER.uid);
+  if(existing){
+    if(confirm('Annuler la demande d\'ami envoyée à '+toPseudo+' ?')){
+      await fbDel('users/'+toUid+'/friendRequests/'+CUR_USER.uid);
+      document.getElementById('friend-search-result').innerHTML='<div style="color:rgba(255,255,255,.4);font-size:.8rem;padding:.3rem">Demande annulée.</div>';
+    }
+    return;
+  }
   await fbSet('users/'+toUid+'/friendRequests/'+CUR_USER.uid,{from:CUR_USER.pseudo,uid:CUR_USER.uid,ts:Date.now()});
-  // Notifier
   const token=await fbGet('users/'+toUid+'/fcmToken');
-  if(token)sendFCMNotification(token,'Demande d\'ami',CUR_USER.pseudo+' veut être votre ami !',{type:'friendRequest',uid:CUR_USER.uid});
-  document.getElementById('friend-search-result').innerHTML='<div style="color:#66bb6a;font-size:.8rem;padding:.3rem">Demande envoyée !</div>';
+  if(token)sendFCMNotification(token,'Demande d\'ami',CUR_USER.pseudo+' veut être votre ami !',{type:'friendRequest',senderName:CUR_USER.pseudo,uid:CUR_USER.uid});
+  document.getElementById('friend-search-result').innerHTML='<div style="color:#66bb6a;font-size:.8rem;padding:.3rem">Demande envoyée ! Appuyez à nouveau pour annuler.</div>';
 }
 
 async function renderFriendRequests(){
@@ -2492,28 +2816,49 @@ function renderFriendsList(){
   renderFriendsListWithStatus();
 }
 
-function renderInviteFriends(){
+async function renderInviteFriends(){
   if(!CUR_USER){document.getElementById('invite-friends-section').style.display='none';return;}
   const entries=Object.entries(_friendsData);
   const sec=document.getElementById('invite-friends-section');
   if(!entries.length){sec.style.display='none';return;}
   sec.style.display='block';
-  document.getElementById('invite-friends-list').innerHTML=entries.map(([uid,f])=>`<div class="friend-row">
-    <div class="friend-av" style="background:${pc(f.pseudo.charCodeAt(0)%8)}">${f.pseudo[0].toUpperCase()}</div>
-    <span class="friend-name">${f.pseudo}</span>
-    <button class="fbtn" onclick="inviteFriendToGame('${uid}','${f.pseudo}')">Inviter</button>
-  </div>`).join('');
+  // Vérifier le statut en ligne de chaque ami
+  const statuses=await Promise.all(entries.map(async([uid,f])=>{
+    const lastOnline=await fbGet('users/'+uid+'/lastOnline')||0;
+    const online=Date.now()-lastOnline<120000;
+    // Vérifier si en partie (a rejoint une salle récemment)
+    const inGame=online&&(Date.now()-lastOnline<30000); // actif dans les 30s = probablement en jeu
+    return{online,inGame};
+  }));
+  document.getElementById('invite-friends-list').innerHTML=entries.map(([uid,f],i)=>{
+    const{online,inGame}=statuses[i];
+    const already=NET._invitedUids&&NET._invitedUids.has(uid);
+    const statusTxt=already?'Invité ✓':(inGame?'En partie':'Inviter');
+    const disabled=already||!online;
+    return`<div class="friend-row">
+      <div class="friend-av" style="background:${pc(f.pseudo.charCodeAt(0)%8)}">${f.pseudo[0].toUpperCase()}</div>
+      <div style="flex:1">
+        <div class="friend-name">${f.pseudo}</div>
+        <div style="font-size:.65rem;color:${online?'#66bb6a':'rgba(255,255,255,.3)'}">${online?'En ligne':'Hors ligne'}</div>
+      </div>
+      <button class="fbtn${already?' red':''}" onclick="inviteFriendToGame('${uid}','${f.pseudo}')"
+        ${disabled?'disabled style="opacity:.35;cursor:not-allowed"':''}>${statusTxt}</button>
+    </div>`;
+  }).join('');
 }
 
 async function inviteFriendToGame(uid,pseudo){
   const code=document.getElementById('w-code').textContent.trim();
   if(!code){alert('Créez d\'abord une partie !');return;}
+  // Empêcher les doubles invitations
+  if(!NET._invitedUids)NET._invitedUids=new Set();
+  const btn=event.currentTarget;
+  if(NET._invitedUids.has(uid)){btn.textContent='Déjà invité ✓';btn.disabled=true;return;}
   const token=await fbGet('users/'+uid+'/fcmToken');
   if(!token){alert(pseudo+' n\'a pas activé les notifications.');return;}
   await sendFCMNotification(token,'Invitation de '+CUR_USER.pseudo,pseudo+', rejoins ma partie de Cinq Couronnes !',{type:'gameInvite',code,senderName:CUR_USER.pseudo});
-  const btn=event.currentTarget;
-  btn.textContent='Envoyé ✓';btn.disabled=true;
-  setTimeout(()=>{btn.textContent='Inviter';btn.disabled=false;},3000);
+  NET._invitedUids.add(uid);
+  btn.textContent='Invité ✓';btn.disabled=true;
 }
 
 // ══════════════════════════════════════════
@@ -2547,6 +2892,9 @@ function onFcmMessage(data){
         show('s-net');
         const inp=document.getElementById('join-code');
         if(inp){inp.value=d.code;checkCodeInput();}
+        // Pré-remplir le pseudo si connecté
+        const nameInp=document.getElementById('join-name');
+        if(nameInp&&CUR_USER)nameInp.value=CUR_USER.pseudo;
       }
     }else if(d.type==='friendRequest'){
       loadFriends();
@@ -2564,13 +2912,16 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('cover').classList.remove('on');
   document.getElementById('ov').classList.remove('on');
   document.getElementById('popup').classList.remove('on');
+  // Thème et langue
+  applyTheme(localStorage.getItem('cinqr_theme')||'dark');
+  _lang=localStorage.getItem('cinqr_lang')||(navigator.language&&!navigator.language.startsWith('fr')?'en':'fr');
+  applyLang();
   initOfflineDetection();
   const restored=tryRestoreSession();
   if(!restored){show('s-auth');}
   setTimeout(tryReconnect,600);
   checkHashCode();
   checkCodeInput();
-  // Tutoriel au premier lancement (après 800ms pour laisser l'UI se charger)
   setTimeout(initTutorial,800);
 });
 </script>
