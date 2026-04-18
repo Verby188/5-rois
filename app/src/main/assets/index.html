@@ -2053,7 +2053,7 @@ async function inviteFriendToGame(uid,pseudo){
   if(!code){alert('Créez d\'abord une partie !');return;}
   const token=await fbGet('users/'+uid+'/fcmToken');
   if(!token){alert(pseudo+' n\'a pas activé les notifications.');return;}
-  await sendFCMNotification(token,'Invitation de '+CUR_USER.pseudo,pseudo+', rejoins ma partie de Cinq Couronnes !',{type:'gameInvite',code,from:CUR_USER.pseudo});
+  await sendFCMNotification(token,'Invitation de '+CUR_USER.pseudo,pseudo+', rejoins ma partie de Cinq Couronnes !',{type:'gameInvite',code,senderName:CUR_USER.pseudo});
   const btn=event.currentTarget;
   btn.textContent='Envoyé ✓';btn.disabled=true;
   setTimeout(()=>{btn.textContent='Inviter';btn.disabled=false;},3000);
@@ -2085,7 +2085,7 @@ function onFcmMessage(data){
   try{
     const d=typeof data==='string'?JSON.parse(data):data;
     if(d.type==='gameInvite'&&d.code){
-      const from=d.from||'Un ami';
+      const from=d.senderName||d.from||'Un ami';
       if(confirm('Invitation reçue !\nRejoindre la partie de '+from+' ?')){
         show('s-net');
         const inp=document.getElementById('join-code');
