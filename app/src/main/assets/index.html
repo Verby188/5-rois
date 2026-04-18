@@ -530,7 +530,6 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
       <div class="net-section">
         <div class="slbl">Créer une partie</div>
         <input class="name-input" id="host-name" placeholder="Ton nom" maxlength="14">
-        <div><div class="slbl" style="margin-bottom:.3rem">Joueurs attendus</div><div class="cnt-row" id="n-cnt-row"></div></div>
         <div><div class="slbl" style="margin-bottom:.3rem">Adversaires IA</div><div class="cnt-row" id="n-ai-row"></div></div>
         <button class="gbtn" onclick="doCreate()">Créer la partie</button>
       </div>
@@ -672,16 +671,11 @@ function buildLS(){
 }
 buildLS();
 
-// Network cnt selectors
-let NET_EXP=2,NET_AI=0;
+// Network — max 8 joueurs humains, l'hôte démarre quand il veut
+let NET_EXP=8,NET_AI=0;
 function buildNetSel(){
-  const cr=document.getElementById('n-cnt-row');cr.innerHTML='';
-  for(let n=2;n<=8;n++){
-    const b=document.createElement('button');b.className='cnt-btn'+(NET_EXP===n?' sel':'');
-    b.textContent=n;b.onclick=()=>{NET_EXP=n;if(NET_AI>n-1)NET_AI=n-1;buildNetSel()};cr.appendChild(b);
-  }
   const ar=document.getElementById('n-ai-row');ar.innerHTML='';
-  for(let n=0;n<=Math.min(4,NET_EXP-1);n++){
+  for(let n=0;n<=4;n++){
     const b=document.createElement('button');b.className='cnt-btn'+(NET_AI===n?' sel':'');
     b.textContent=n;b.onclick=()=>{NET_AI=n;buildNetSel()};ar.appendChild(b);
   }
@@ -851,8 +845,8 @@ function updateWaitingList(){
 function checkCanStart(){
   const n=Object.keys(NET._guestNames).length;
   const btn=document.getElementById('w-start-btn');
-  btn.style.display=n>=NET.expectedHumans-1?'block':'none';
-  if(n>=NET.expectedHumans-1)document.getElementById('w-msg').textContent='Tous les joueurs sont connectés !';
+  btn.style.display=n>=1?'block':'none';
+  if(n>=1)document.getElementById('w-msg').textContent=n+' joueur'+(n>1?'s':'')+" connecté"+(n>1?'s':'')+' — démarrez quand vous voulez !';
 }
 
 function hostStart(){
@@ -860,8 +854,14 @@ function hostStart(){
   if(!G){
     const players=[];
     players.push({isHuman:true,name:NET._hostName||'Hôte',color:pc(0)});
-    for(let i=1;i<NET.expectedHumans;i++)players.push({isHuman:true,name:NET._guestNames[i]||'Joueur '+(i+1),color:pc(i)});
-    for(let i=0;i<NET.numAI;i++)players.push({isHuman:false,name:'IA '+(i+1),color:pc(NET.expectedHumans+i)});
+    // Uniquement les guests réellement connectés
+    const connectedGuests=Object.entries(NET._guestNames).sort((a,b)=>a[0]-b[0]);
+    connectedGuests.forEach(([idx,name],i)=>{
+      players.push({isHuman:true,name:name||'Joueur '+(i+2),color:pc(i+1)});
+    });
+    const humanCount=players.length;
+    for(let i=0;i<NET_AI;i++)players.push({isHuman:false,name:'IA '+(i+1),color:pc(humanCount+i)});
+    NET.expectedHumans=humanCount;
     startGame(players);
   }
 }
@@ -2053,7 +2053,7 @@ async function inviteFriendToGame(uid,pseudo){
   if(!code){alert('Créez d\'abord une partie !');return;}
   const token=await fbGet('users/'+uid+'/fcmToken');
   if(!token){alert(pseudo+' n\'a pas activé les notifications.');return;}
-  await sendFCMNotification(token,'Invitation de '+CUR_USER.pseudo,pseudo+', rejoins ma partie de Cinq Couronnes !',{type:'gameInvite',code});
+  await sendFCMNotification(token,'Invitation de '+CUR_USER.pseudo,pseudo+', rejoins ma partie de Cinq Couronnes !',{type:'gameInvite',code,from:CUR_USER.pseudo});
   const btn=event.currentTarget;
   btn.textContent='Envoyé ✓';btn.disabled=true;
   setTimeout(()=>{btn.textContent='Inviter';btn.disabled=false;},3000);
@@ -2085,7 +2085,8 @@ function onFcmMessage(data){
   try{
     const d=typeof data==='string'?JSON.parse(data):data;
     if(d.type==='gameInvite'&&d.code){
-      if(confirm('Invitation reçue !\nRejoindre la partie de '+d.from+' ?')){
+      const from=d.from||'Un ami';
+      if(confirm('Invitation reçue !\nRejoindre la partie de '+from+' ?')){
         show('s-net');
         const inp=document.getElementById('join-code');
         if(inp){inp.value=d.code;checkCodeInput();}
