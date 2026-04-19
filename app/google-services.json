@@ -24,6 +24,25 @@
           "other_platform_oauth_client": []
         }
       }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1063280643089:android:94b36bc31ae508ee2cb5b0",
+        "android_client_info": {
+          "package_name": "com.verby188.u9"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAZ6ZfCQrWoJnc3YjBFQ19Z9r9d0zkzeDg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
     }
   ],
   "configuration_version": "1"
