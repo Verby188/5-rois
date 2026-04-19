@@ -2293,15 +2293,14 @@ function buildInviteText(code){
 }
 
 function sendSMSInvite(){
-  const code = document.getElementById('w-code').textContent.trim();
+  const code = NET.roomCode||document.getElementById('w-code').textContent.trim();
   if(!code) return;
   const body = buildInviteText(code);
-  // Android & iOS both support sms: URI
   window.location.href = `sms:?body=${body}`;
 }
 
 function copyInviteLink(){
-  const code = document.getElementById('w-code').textContent.trim();
+  const code = NET.roomCode||document.getElementById('w-code').textContent.trim();
   if(!code) return;
   const text = `Cinq Couronnes — Code : ${code}`;
   if(navigator.clipboard && navigator.clipboard.writeText){
@@ -2831,24 +2830,24 @@ async function renderInviteFriends(){
     return{online,inGame};
   }));
   document.getElementById('invite-friends-list').innerHTML=entries.map(([uid,f],i)=>{
-    const{online,inGame}=statuses[i];
+    const{online}=statuses[i];
     const already=NET._invitedUids&&NET._invitedUids.has(uid);
-    const statusTxt=already?'Invité ✓':(inGame?'En partie':'Inviter');
-    const disabled=already||!online;
+    const statusTxt=already?'Invité ✓':'Inviter';
     return`<div class="friend-row">
       <div class="friend-av" style="background:${pc(f.pseudo.charCodeAt(0)%8)}">${f.pseudo[0].toUpperCase()}</div>
       <div style="flex:1">
         <div class="friend-name">${f.pseudo}</div>
-        <div style="font-size:.65rem;color:${online?'#66bb6a':'rgba(255,255,255,.3)'}">${online?'En ligne':'Hors ligne'}</div>
+        <div style="font-size:.65rem;color:${online?'#66bb6a':'rgba(255,255,255,.3)'}">${online?'En ligne':'App fermée'}</div>
       </div>
       <button class="fbtn${already?' red':''}" onclick="inviteFriendToGame('${uid}','${f.pseudo}')"
-        ${disabled?'disabled style="opacity:.35;cursor:not-allowed"':''}>${statusTxt}</button>
+        ${already?'disabled style="opacity:.35;cursor:not-allowed"':''}>${statusTxt}</button>
     </div>`;
   }).join('');
 }
 
 async function inviteFriendToGame(uid,pseudo){
-  const code=document.getElementById('w-code').textContent.trim();
+  // Utiliser NET.roomCode directement plutôt que le DOM (plus fiable)
+  const code=NET.roomCode||document.getElementById('w-code').textContent.trim();
   if(!code){alert('Créez d\'abord une partie !');return;}
   // Empêcher les doubles invitations
   if(!NET._invitedUids)NET._invitedUids=new Set();
