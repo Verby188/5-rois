@@ -1,6 +1,7 @@
 package com.verby188.cinqrois
 
 import android.annotation.SuppressLint
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -17,7 +18,23 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
+import com.google.android.play.core.appupdate.AppUpdateManagerFactory
+import com.google.android.play.core.appupdate.AppUpdateOptions
+import com.google.android.play.core.install.InstallStateUpdatedListener
+import com.google.android.play.core.install.model.AppUpdateType
+import com.google.android.play.core.install.model.InstallStatus
+import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.firebase.messaging.FirebaseMessaging
+
+/** Interface exposée au JS pour déclencher le redémarrage après mise à jour. */
+class AndroidBridge(private val activity: MainActivity) {
+    @android.webkit.JavascriptInterface
+    fun completeUpdate() {
+        activity.runOnUiThread {
+            activity.appUpdateManager.completeUpdate()
+        }
+    }
+}
 
 class MainActivity : AppCompatActivity() {
 
@@ -25,6 +42,21 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adView: AdView
     private var pendingCode: String? = null
     private var pendingNotifData: String? = null
+
+    // ── In-App Updates ──
+    private val appUpdateManager by lazy { AppUpdateManagerFactory.create(this) }
+    private val UPDATE_REQUEST_CODE = 1234
+
+    private val installStateListener = InstallStateUpdatedListener { state ->
+        if (state.installStatus() == InstallStatus.DOWNLOADED) {
+            // Mise à jour téléchargée : notifier le JS pour afficher une bannière
+            webView.post {
+                webView.evaluateJavascript(
+                    "if(typeof onUpdateReady==='function')onUpdateReady();", null
+                )
+            }
+        }
+    }
 
     @SuppressLint("SetJavaScriptEnabled")
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -101,6 +133,8 @@ class MainActivity : AppCompatActivity() {
             loadWithOverviewMode = true
         }
 
+        webView.addJavascriptInterface(AndroidBridge(this), "Android")
+
         webView.webChromeClient = object : WebChromeClient() {
             override fun onPermissionRequest(request: PermissionRequest) {
                 request.grant(request.resources)
@@ -148,6 +182,32 @@ class MainActivity : AppCompatActivity() {
         adView.loadAd(AdRequest.Builder().build())
 
         handleIntent(intent)
+        checkForUpdate()
+    }
+
+    // ── In-App Updates ──
+    private fun checkForUpdate() {
+        appUpdateManager.registerListener(installStateListener)
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
+            if (info.updateAvailability() == UpdateAvailability.UPDATE_AVAILABLE
+                && info.isUpdateTypeAllowed(AppUpdateType.FLEXIBLE)
+            ) {
+                appUpdateManager.startUpdateFlowForResult(
+                    info,
+                    this,
+                    AppUpdateOptions.newBuilder(AppUpdateType.FLEXIBLE).build(),
+                    UPDATE_REQUEST_CODE
+                )
+            }
+        }
+    }
+
+    @Deprecated("Deprecated in Java")
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (requestCode == UPDATE_REQUEST_CODE && resultCode != Activity.RESULT_OK) {
+            // L'utilisateur a refusé ou annulé — on réessaiera au prochain lancement
+        }
     }
 
     private fun getFcmTokenAndInject() {
@@ -241,7 +301,25 @@ class MainActivity : AppCompatActivity() {
         else super.onBackPressed()
     }
 
-    override fun onResume() { super.onResume(); webView.onResume(); adView.resume() }
+    override fun onResume() {
+        super.onResume()
+        webView.onResume()
+        adView.resume()
+        // Si une mise à jour flexible a été téléchargée pendant que l'app était en arrière-plan
+        appUpdateManager.appUpdateInfo.addOnSuccessListener { info ->
+            if (info.installStatus() == InstallStatus.DOWNLOADED) {
+                webView.post {
+                    webView.evaluateJavascript(
+                        "if(typeof onUpdateReady==='function')onUpdateReady();", null
+                    )
+                }
+            }
+        }
+    }
     override fun onPause() { super.onPause(); webView.onPause(); adView.pause() }
-    override fun onDestroy() { super.onDestroy(); adView.destroy() }
+    override fun onDestroy() {
+        super.onDestroy()
+        appUpdateManager.unregisterListener(installStateListener)
+        adView.destroy()
+    }
 }
