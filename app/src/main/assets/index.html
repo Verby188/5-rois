@@ -67,6 +67,7 @@
 .ui-toggle-btn:hover{background:rgba(200,160,0,.15)}
 #theme-btn{bottom:4.5rem;right:.7rem}
 #lang-btn{bottom:2.8rem;right:.7rem}
+#cb-btn{bottom:1.1rem;right:.7rem}
 [data-theme="light"] .ui-toggle-btn{background:rgba(255,255,255,.7);color:var(--gold)}
 body{background:var(--felt);
   background-image:radial-gradient(ellipse 120% 100% at 50% 0%,var(--bg1),var(--bg2) 60%),
@@ -229,6 +230,8 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 .cbi{width:100%;height:100%;border:2px solid rgba(255,255,255,.14);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:26px}
 .card.joker{background:linear-gradient(135deg,#fff9dc,#fff3a0)}
 .card.wild{background:linear-gradient(135deg,#e8ffe8,#c3f0c3)}
+/* Mode daltonien — fonds distincts sans confusion rouge/vert */
+[data-daltonien="true"] .card.wild{background:linear-gradient(135deg,#cce8ff,#99cfff);}
 .card.sm{width:42px;height:60px;border-radius:6px;padding:3px}
 .card.sm .cv{font-size:8px}.card.sm .cs{font-size:7px}.card.sm .cm{font-size:14px}.card.sm .cbi{font-size:15px}
 
@@ -459,6 +462,7 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 <div id="offline-banner">📡 Connexion perdue — Vérifiez votre réseau</div>
 <button class="ui-toggle-btn" id="theme-btn" onclick="toggleTheme()" title="Changer de thème">🌙</button>
 <button class="ui-toggle-btn" id="lang-btn" onclick="toggleLang()" title="Change language">🇫🇷</button>
+<button class="ui-toggle-btn" id="cb-btn" onclick="toggleDaltonien()" title="Mode daltonien"></button>
 
 <!-- ══ PROFIL MODAL ══ -->
 <div id="profile-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:1.5rem">
@@ -790,6 +794,11 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 // ══ CONSTANTS ══
 const SUITS=['★','♥','♣','♠','♦'];
 const SCOL={'★':'#b8860b','♥':'#c62828','♣':'#2e7d32','♠':'#1a237e','♦':'#1565c0'};
+// Palette daltonien — Okabe & Ito (2008), accessible deutéranopie/protanopie/tritanopie
+const SCOL_CB={'★':'#E69F00','♥':'#D55E00','♣':'#009E73','♠':'#333333','♦':'#56B4E9'};
+// Lettre mnémotechnique affichée sous l'enseigne en mode daltonien
+const SLBL_CB={'★':'E','♥':'C','♣':'T','♠':'P','♦':'K'};
+let _daltonien=localStorage.getItem('cinqr_daltonien')==='1';
 const SORD={};SUITS.forEach((s,i)=>SORD[s]=i);
 const VALS=[3,4,5,6,7,8,9,10,11,12,13];
 const DNAMES=['Alice','Bruno','Celeste','Dario','Emma','Félix','Gaia','Hugo'];
@@ -1611,8 +1620,17 @@ function mkCEl(c,bv,small,clickFn,selected,extra){
   const el=document.createElement('div');const wild=isWild(c,bv);
   el.className='card'+(small?' sm':'')+(c.joker?' joker':wild?' wild':'')+(selected?' sel':'')+(extra?' '+extra:'');
   if(clickFn)el.onclick=clickFn;
-  if(c.joker){el.innerHTML=`<div class="cc"><div class="cv" style="color:#b8860b">J</div><div class="cs">🃏</div></div><div class="cm">🃏</div><div class="cc bot"><div class="cv" style="color:#b8860b">J</div><div class="cs">🃏</div></div>`;}
-  else{const col=wild?'#2e7d32':SCOL[c.suit]||'#333';const vd=dv(c.val);el.innerHTML=`<div class="cc"><div class="cv" style="color:${col}">${vd}</div><div class="cs" style="color:${col}">${c.suit}</div></div><div class="cm" style="color:${col}">${c.suit}</div><div class="cc bot"><div class="cv" style="color:${col}">${vd}</div><div class="cs" style="color:${col}">${c.suit}</div></div>`;}
+  const scol=_daltonien?SCOL_CB:SCOL;
+  const jokerCol=_daltonien?'#CC79A7':'#b8860b'; // violet Okabe-Ito en mode daltonien
+  if(c.joker){el.innerHTML=`<div class="cc"><div class="cv" style="color:${jokerCol}">J</div><div class="cs">🃏</div></div><div class="cm">🃏</div><div class="cc bot"><div class="cv" style="color:${jokerCol}">J</div><div class="cs">🃏</div></div>`;}
+  else{
+    const col=wild?(_daltonien?'#0072B2':'#2e7d32'):scol[c.suit]||'#333';
+    const vd=dv(c.val);
+    // En mode daltonien, ajoute une petite lettre sous l'enseigne (C=Cœur, K=Carreau, T=Trèfle, P=Pique, E=Étoile)
+    const sLbl=_daltonien?`<span style="font-size:.55em;line-height:1;display:block;opacity:.75">${SLBL_CB[c.suit]||''}</span>`:'';
+    const sCnr=`${c.suit}${sLbl}`;
+    el.innerHTML=`<div class="cc"><div class="cv" style="color:${col}">${vd}</div><div class="cs" style="color:${col}">${sCnr}</div></div><div class="cm" style="color:${col}">${c.suit}</div><div class="cc bot"><div class="cv" style="color:${col}">${vd}</div><div class="cs" style="color:${col}">${sCnr}</div></div>`;
+  }
   return el;
 }
 function mkBack(small){const el=document.createElement('div');el.className='card cback'+(small?' sm':'');el.innerHTML='<div class="cbi">👑</div>';return el}
@@ -2584,6 +2602,19 @@ function computeStats(hist){
 }
 
 // ══ THÈME ══
+function toggleDaltonien(){
+  _daltonien=!_daltonien;
+  localStorage.setItem('cinqr_daltonien',_daltonien?'1':'0');
+  applyDaltonien();
+  // Re-rendu des cartes si une partie est en cours
+  if(G)render();
+  if(GS)renderGuest();
+}
+function applyDaltonien(){
+  const btn=document.getElementById('cb-btn');
+  if(btn)btn.textContent=_daltonien?'🟡':'👁';
+  document.body.setAttribute('data-daltonien',_daltonien?'true':'false');
+}
 function toggleTheme(){
   const isLight=document.documentElement.getAttribute('data-theme')==='light';
   const newTheme=isLight?'dark':'light';
@@ -2915,6 +2946,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   applyTheme(localStorage.getItem('cinqr_theme')||'dark');
   _lang=localStorage.getItem('cinqr_lang')||(navigator.language&&!navigator.language.startsWith('fr')?'en':'fr');
   applyLang();
+  applyDaltonien();
   initOfflineDetection();
   const restored=tryRestoreSession();
   if(!restored){show('s-auth');}
