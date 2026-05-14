@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
     private var pendingNotifData: String? = null
 
     // ── In-App Updates ──
-    private val appUpdateManager by lazy { AppUpdateManagerFactory.create(this) }
+    val appUpdateManager by lazy { AppUpdateManagerFactory.create(this) }
     private val UPDATE_REQUEST_CODE = 1234
 
     private val installStateListener = InstallStateUpdatedListener { state ->
