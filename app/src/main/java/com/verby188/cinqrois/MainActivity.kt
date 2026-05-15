@@ -77,6 +77,13 @@ class MainActivity : AppCompatActivity() {
 
         MobileAds.initialize(this)
 
+        // ── Extraire le code d'invitation AVANT de charger la WebView (pattern U9) ──
+        val notifType = intent?.getStringExtra("type")
+        if (notifType == "gameInvite") {
+            val code = intent?.getStringExtra("code") ?: ""
+            if (code.isNotEmpty()) pendingCode = code
+        }
+
         // Demander la permission notifications (Android 13+)
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
@@ -178,7 +185,15 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        webView.loadUrl("file:///android_asset/index.html")
+        // Charger la page — code passé via hash si cold start depuis notification
+        val startUrl = if (pendingCode != null) {
+            val code = pendingCode!!
+            pendingCode = null
+            "file:///android_asset/index.html#invite=$code"
+        } else {
+            "file:///android_asset/index.html"
+        }
+        webView.loadUrl(startUrl)
         adView.loadAd(AdRequest.Builder().build())
 
         handleIntent(intent)
@@ -229,13 +244,22 @@ class MainActivity : AppCompatActivity() {
     private fun handleIntent(intent: Intent?) {
         if (intent == null) return
 
-        // Notification FCM avec données
         val notifType = intent.getStringExtra("type")
         if (notifType != null) {
             val code = intent.getStringExtra("code") ?: ""
             val from = intent.getStringExtra("senderName") ?: intent.getStringExtra("from") ?: ""
-            val fromTap = intent.getStringExtra("fromTap") ?: "false"
-            val data = """{"type":"$notifType","code":"$code","from":"$from","fromTap":"$fromTap"}"""
+
+            if (notifType == "gameInvite" && code.isNotEmpty()) {
+                // App en avant-plan (warm start) → injecter directement
+                // App fermée (cold start) → pendingCode déjà consommé dans loadUrl
+                if (::webView.isInitialized && webView.url != null) {
+                    injectCode(code)
+                }
+                return
+            }
+
+            // Autres types de notifications (friendRequest, etc.)
+            val data = """{"type":"$notifType","code":"$code","from":"$from"}"""
             if (::webView.isInitialized && webView.url != null) {
                 injectNotification(data)
             } else {
@@ -244,7 +268,7 @@ class MainActivity : AppCompatActivity() {
             return
         }
 
-        // Deep link URL
+        // Deep link cinqcouronnes://join/CODE
         val uri = intent.data ?: return
         val code = extractCode(uri) ?: return
         if (::webView.isInitialized && webView.url != null) {
@@ -268,17 +292,10 @@ class MainActivity : AppCompatActivity() {
 
     private fun injectCode(code: String) {
         webView.post {
-            webView.evaluateJavascript("""
-                (function(){
-                    try{
-                        if(typeof show==='function')show('s-net');
-                        var inp=document.getElementById('join-code');
-                        if(inp){inp.value='$code';if(typeof checkCodeInput==='function')checkCodeInput();}
-                        var box=document.getElementById('code-detected-box');
-                        if(box){box.style.display='flex';box.className='code-detected';box.innerHTML='<span>🎴</span><span>Invitation reçue — Code : <b>$code</b></span>';box.onclick=null;}
-                    }catch(e){}
-                })();
-            """.trimIndent(), null)
+            webView.evaluateJavascript(
+                "if(typeof onDeepLinkCode==='function')onDeepLinkCode('$code');",
+                null
+            )
         }
     }
 

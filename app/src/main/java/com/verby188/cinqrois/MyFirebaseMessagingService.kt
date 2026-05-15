@@ -21,7 +21,6 @@ class MyFirebaseMessagingService : FirebaseMessagingService() {
         val intent = Intent(this, MainActivity::class.java).apply {
             addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP)
             data.forEach { (key, value) -> putExtra(key, value) }
-            putExtra("fromTap", "true") // L'utilisateur a tapé la notification
         }
 
         val pendingIntent = PendingIntent.getActivity(
