@@ -230,8 +230,88 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 .cbi{width:100%;height:100%;border:2px solid rgba(255,255,255,.14);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:26px}
 .card.joker{background:linear-gradient(135deg,#fff9dc,#fff3a0)}
 .card.wild{background:linear-gradient(135deg,#e8ffe8,#c3f0c3)}
-/* Mode daltonien — fonds distincts sans confusion rouge/vert */
-[data-daltonien="true"] .card.wild{background:linear-gradient(135deg,#cce8ff,#99cfff);}
+
+/* ══ QUOI DE NEUF ══ */
+#wn-modal{position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.82);
+  display:none;align-items:center;justify-content:center;padding:1rem}
+#wn-modal.open{display:flex}
+.wn-box{background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  width:100%;max-width:360px;overflow:hidden;position:relative;
+  box-shadow:0 8px 40px rgba(0,0,0,.6)}
+.wn-img-area{width:100%;height:175px;position:relative;overflow:hidden;flex-shrink:0}
+.wn-img-area img{width:100%;height:100%;object-fit:cover;display:block}
+.wn-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:3.5rem}
+.wn-skip{position:absolute;top:.6rem;right:.8rem;background:rgba(0,0,0,.4);
+  border:none;color:rgba(255,255,255,.7);font-size:.7rem;padding:.3rem .7rem;
+  border-radius:20px;cursor:pointer;font-family:'Cinzel',serif;z-index:2}
+.wn-skip:hover{color:#fff}
+.wn-body{padding:.8rem 1rem 1rem}
+.wn-vbadge{display:inline-block;font-size:.6rem;font-family:'Cinzel',serif;
+  color:var(--gold);border:1px solid rgba(200,160,0,.4);border-radius:20px;
+  padding:.15rem .55rem;margin-bottom:.35rem}
+.wn-title{font-family:'Cinzel',serif;font-size:1rem;color:var(--text);
+  margin-bottom:.4rem;line-height:1.3}
+.wn-desc{font-size:.78rem;color:var(--text-muted);line-height:1.55}
+.wn-desc b{color:var(--text)}
+.wn-nav{display:flex;align-items:center;justify-content:space-between;
+  margin-top:.9rem;gap:.5rem}
+.wn-dots{display:flex;gap:.35rem;align-items:center;justify-content:center;flex:1}
+.wn-dot{width:7px;height:7px;border-radius:50%;background:rgba(255,255,255,.2);
+  transition:.2s;cursor:pointer}
+.wn-dot.on{background:var(--gold);width:18px;border-radius:4px}
+.wn-arr{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);
+  background:rgba(255,255,255,.06);color:var(--text-muted);font-size:.9rem;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+  transition:.15s;flex-shrink:0}
+.wn-arr:hover:not(:disabled){background:rgba(255,255,255,.13);color:var(--text)}
+.wn-arr:disabled{opacity:.2;cursor:default}
+.wn-cta{width:100%;margin-top:.7rem;padding:.55rem;border-radius:9px;border:none;
+  background:linear-gradient(135deg,var(--gold),#c8a400);
+  color:#1a1a1a;font-family:'Cinzel',serif;font-size:.78rem;font-weight:700;
+  cursor:pointer;transition:.15s;display:none}
+.wn-cta.show{display:block}
+.wn-cta:hover{opacity:.9}
+#color-modal{position:fixed;inset:0;z-index:650;background:rgba(0,0,0,.75);
+  display:none;align-items:center;justify-content:center;padding:1rem}
+#color-modal.open{display:flex}
+#color-modal .cmbox{background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  width:100%;max-width:380px;padding:1rem;position:relative;max-height:92vh;overflow-y:auto}
+.cm-title{font-family:'Cinzel',serif;color:var(--gold);font-size:.9rem;margin-bottom:.7rem;
+  display:flex;align-items:center;gap:.5rem}
+.cm-row-lbl{font-size:.65rem;color:var(--text-muted);text-transform:uppercase;
+  letter-spacing:.1em;margin:.6rem 0 .3rem;font-family:'Cinzel',serif}
+.cm-cards-row{display:flex;gap:.35rem;justify-content:center;flex-wrap:nowrap}
+/* mini-carte configurateur */
+.cmc{width:46px;height:66px;border-radius:7px;background:#fff;
+  border:1.5px solid rgba(0,0,0,.15);box-shadow:1px 2px 6px rgba(0,0,0,.25);
+  display:flex;flex-direction:column;justify-content:space-between;padding:3px;
+  position:relative;cursor:default;flex-shrink:0}
+.cmc .cmcv{font-family:'Cinzel',serif;font-size:10px;font-weight:700;line-height:1}
+.cmc .cmcs{font-size:9px;line-height:1;margin-top:1px}
+.cmc .cmcm{font-size:20px;text-align:center;position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);line-height:1}
+.cmc .cmcbot{transform:rotate(180deg);display:flex;flex-direction:column;align-items:center}
+.cmc.wild-card{background:linear-gradient(135deg,#e8ffe8,#c3f0c3)}
+.cmc.joker-card{background:linear-gradient(135deg,#fff9dc,#fff3a0)}
+/* wrapper carte + picker */
+.cmc-wrap{display:flex;flex-direction:column;align-items:center;gap:.25rem}
+.cmc-lbl{font-size:.58rem;color:var(--text-muted);font-family:'Cinzel',serif}
+.cmc-inp{width:32px;height:22px;border:1.5px solid var(--border);border-radius:5px;
+  padding:1px;cursor:pointer;background:none}
+/* presets */
+.cm-presets{display:flex;gap:.4rem;margin:.5rem 0 .2rem;flex-wrap:wrap}
+.cm-preset-btn{padding:.25rem .6rem;border:1px solid var(--border);border-radius:6px;
+  font-size:.65rem;cursor:pointer;background:rgba(255,255,255,.05);
+  color:var(--text-muted);font-family:'Cinzel',serif;transition:.15s}
+.cm-preset-btn:hover{border-color:var(--gold);color:var(--gold)}
+/* boutons action */
+.cm-actions{display:flex;gap:.5rem;margin-top:.8rem}
+.cm-actions button{flex:1;padding:.45rem;border-radius:8px;border:none;
+  font-family:'Cinzel',serif;font-size:.72rem;cursor:pointer;transition:.15s}
+.cm-btn-reset{background:rgba(255,255,255,.07);color:var(--text-muted)}
+.cm-btn-reset:hover{background:rgba(255,255,255,.13)}
+.cm-btn-save{background:linear-gradient(135deg,var(--gold),#c8a400);color:#1a1a1a;font-weight:700}
+.cm-btn-save:hover{opacity:.9}
 .card.sm{width:42px;height:60px;border-radius:6px;padding:3px}
 .card.sm .cv{font-size:8px}.card.sm .cs{font-size:7px}.card.sm .cm{font-size:14px}.card.sm .cbi{font-size:15px}
 
@@ -476,7 +556,7 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 </div>
 <button class="ui-toggle-btn" id="theme-btn" onclick="toggleTheme()" title="Changer de thème">🌙</button>
 <button class="ui-toggle-btn" id="lang-btn" onclick="toggleLang()" title="Change language">🇫🇷</button>
-<button class="ui-toggle-btn" id="cb-btn" onclick="toggleDaltonien()" title="Mode daltonien"></button>
+<button class="ui-toggle-btn" id="cb-btn" onclick="openColorModal()" title="Couleurs des cartes">🎨</button>
 
 <!-- ══ PROFIL MODAL ══ -->
 <div id="profile-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:1.5rem">
@@ -492,6 +572,50 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
     <div id="pm-stats" style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.3rem 0"></div>
     <div id="pm-history" style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem"></div>
     <button class="gbtn" style="margin-top:.5rem;background:linear-gradient(135deg,#b71c1c,#e53935)" onclick="doLogout()">Se déconnecter</button>
+  </div>
+</div>
+
+<!-- ══ QUOI DE NEUF ══ -->
+<div id="wn-modal">
+  <div class="wn-box">
+    <div class="wn-img-area" id="wn-img-area">
+      <img id="wn-img" src="" alt="" onerror="this.style.display='none'">
+      <div class="wn-img-ph" id="wn-img-ph"></div>
+    </div>
+    <button class="wn-skip" onclick="closeWnModal()">Passer ✕</button>
+    <div class="wn-body">
+      <div class="wn-vbadge" id="wn-badge"></div>
+      <div class="wn-title" id="wn-title"></div>
+      <div class="wn-desc" id="wn-desc"></div>
+      <div class="wn-nav">
+        <button class="wn-arr" id="wn-prev" onclick="wnGo(-1)">◀</button>
+        <div class="wn-dots" id="wn-dots"></div>
+        <button class="wn-arr" id="wn-next" onclick="wnGo(1)">▶</button>
+      </div>
+      <button class="wn-cta" id="wn-cta" onclick="closeWnModal()">C'est parti ! 🎴</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CONFIGURATEUR COULEURS CARTES ══ -->
+<div id="color-modal">
+  <div class="cmbox">
+    <button onclick="closeColorModal()" style="position:absolute;top:.7rem;right:.9rem;background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer">✕</button>
+    <div class="cm-title">🎨 Couleurs des cartes</div>
+
+    <div class="cm-row-lbl">Couleurs standard</div>
+    <div class="cm-cards-row" id="cm-ref-row"></div>
+
+    <div class="cm-row-lbl">Vos couleurs — appuyez pour modifier</div>
+    <div class="cm-cards-row" id="cm-custom-row"></div>
+
+    <div class="cm-row-lbl" style="margin-top:.7rem">Palettes prédéfinies</div>
+    <div class="cm-presets" id="cm-presets"></div>
+
+    <div class="cm-actions">
+      <button class="cm-btn-reset" onclick="resetCustomColors()">Réinitialiser</button>
+      <button class="cm-btn-save" onclick="saveAndApplyColors()">Enregistrer</button>
+    </div>
   </div>
 </div>
 
@@ -808,11 +932,42 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 // ══ CONSTANTS ══
 const SUITS=['★','♥','♣','♠','♦'];
 const SCOL={'★':'#b8860b','♥':'#c62828','♣':'#2e7d32','♠':'#1a237e','♦':'#1565c0'};
-// Palette daltonien — Okabe & Ito (2008), accessible deutéranopie/protanopie/tritanopie
-const SCOL_CB={'★':'#E69F00','♥':'#D55E00','♣':'#009E73','♠':'#333333','♦':'#56B4E9'};
-// Lettre mnémotechnique affichée sous l'enseigne en mode daltonien
-const SLBL_CB={'★':'E','♥':'C','♣':'T','♠':'P','♦':'K'};
-let _daltonien=localStorage.getItem('cinqr_daltonien')==='1';
+
+// ══ COULEURS PERSONNALISÉES ══
+const DEFAULT_COLORS={'♥':'#c62828','♣':'#2e7d32','♠':'#1a237e','♦':'#1565c0','★':'#b8860b',wild:'#2e7d32',joker:'#b8860b'};
+// Presets daltonisme (Okabe-Ito + tritanopie) utilisables comme point de départ
+const COLOR_PRESETS={
+  normal: {label:'Normal','♥':'#c62828','♣':'#2e7d32','♠':'#1a237e','♦':'#1565c0','★':'#b8860b',wild:'#2e7d32',joker:'#b8860b'},
+  deut:   {label:'Deutéranopie','♥':'#D55E00','♣':'#009E73','♠':'#333333','♦':'#56B4E9','★':'#E69F00',wild:'#0072B2',joker:'#CC79A7'},
+  trit:   {label:'Tritanopie',  '♥':'#CC0000','♣':'#007744','♠':'#222222','♦':'#CC00AA','★':'#FF8800',wild:'#7722BB',joker:'#884400'}
+};
+let _customColors=Object.assign({},DEFAULT_COLORS);
+const SLBL={'★':'E','♥':'C','♣':'T','♠':'P','♦':'K'};
+
+// ══ QUOI DE NEUF ══
+const APP_VERSION='1.7';
+const WN_FEATURES=[
+  {v:'1.0',icon:'🤖',bg:'#311b92,#4527a0',title:'Jeu contre l\'IA',img:'img/wn/ia.png',
+   desc:'Jouez seul contre 1 à 7 adversaires IA. Depuis le lobby appuyez sur <b>Partie locale</b>, choisissez le nombre de joueurs et basculez chaque slot en <b>Humain</b> ou <b>IA</b>.'},
+  {v:'1.0',icon:'🌙',bg:'#1a237e,#283593',title:'Thème sombre & clair',img:'img/wn/theme.png',
+   desc:'Changez l\'apparence de l\'app via le bouton <b>🌙</b> en bas à droite du lobby. Le thème est mémorisé entre les sessions.'},
+  {v:'1.0',icon:'🌐',bg:'#004d40,#00695c',title:'Langue FR / EN',img:'img/wn/lang.png',
+   desc:'L\'interface est disponible en français et en anglais. Appuyez sur le drapeau <b>🇫🇷</b> en bas à droite pour basculer.'},
+  {v:'1.1',icon:'🏠',bg:'#0d47a1,#1565c0',title:'Parties multijoueur',img:'img/wn/multi.png',
+   desc:'Créez une salle depuis <b>Partie en ligne → Créer</b>. Partagez le code à 4 lettres affiché pour inviter jusqu\'à 7 amis. La partie démarre quand vous appuyez sur <b>Lancer</b>.'},
+  {v:'1.2',icon:'📱',bg:'#1b5e20,#2e7d32',title:'Invitation par SMS',img:'img/wn/sms.png',
+   desc:'Depuis la salle d\'attente, appuyez sur <b>Inviter par SMS</b>. Votre correspondant recevra un lien qui ouvre directement la salle dans l\'app.'},
+  {v:'1.3',icon:'👤',bg:'#e65100,#f57c00',title:'Compte joueur',img:'img/wn/compte.png',
+   desc:'Créez un compte depuis l\'écran d\'accueil pour accéder à votre profil, consulter vos statistiques et retrouver l\'historique de vos parties.'},
+  {v:'1.3',icon:'📊',bg:'#880e4f,#ad1457',title:'Statistiques & historique',img:'img/wn/stats.png',
+   desc:'Consultez le nombre de parties jouées, gagnées et votre score moyen en appuyant sur votre <b>avatar</b> dans le lobby pour ouvrir votre profil.'},
+  {v:'1.4',icon:'👥',bg:'#006064,#00838f',title:'Système d\'amis',img:'img/wn/amis.png',
+   desc:'Ajoutez des amis par pseudo depuis le bouton <b>Amis</b> du lobby. Vous voyez leur statut en ligne en temps réel et pouvez les inviter directement dans une salle.'},
+  {v:'1.5',icon:'🔔',bg:'#4a148c,#6a1b9a',title:'Notifications push',img:'img/wn/notifs.png',
+   desc:'Recevez une notification même si l\'app est fermée quand un ami vous invite à jouer. Autorisez les notifications lors de la première demande.'},
+  {v:'1.6',icon:'🎨',bg:'#bf360c,#e64a19',title:'Couleurs des cartes',img:'img/wn/couleurs.png',
+   desc:'Personnalisez la couleur de chaque enseigne et des cartes atouts selon vos préférences (daltonisme, confort visuel…). Appuyez sur <b>🎨</b> en bas à droite. Les couleurs sont sauvegardées sur votre compte.'},
+];
 const SORD={};SUITS.forEach((s,i)=>SORD[s]=i);
 const VALS=[3,4,5,6,7,8,9,10,11,12,13];
 const DNAMES=['Alice','Bruno','Celeste','Dario','Emma','Félix','Gaia','Hugo'];
@@ -825,6 +980,8 @@ function show(id){
     if(!el)return;
     el.classList.toggle('on',s===id);
   });
+  // Rafraîchir la config locale à chaque ouverture pour injecter le pseudo connecté
+  if(id==='s-local')buildLS();
 }
 
 // ══ LOCAL SETUP ══
@@ -1634,16 +1791,13 @@ function mkCEl(c,bv,small,clickFn,selected,extra){
   const el=document.createElement('div');const wild=isWild(c,bv);
   el.className='card'+(small?' sm':'')+(c.joker?' joker':wild?' wild':'')+(selected?' sel':'')+(extra?' '+extra:'');
   if(clickFn)el.onclick=clickFn;
-  const scol=_daltonien?SCOL_CB:SCOL;
-  const jokerCol=_daltonien?'#CC79A7':'#b8860b'; // violet Okabe-Ito en mode daltonien
-  if(c.joker){el.innerHTML=`<div class="cc"><div class="cv" style="color:${jokerCol}">J</div><div class="cs">🃏</div></div><div class="cm">🃏</div><div class="cc bot"><div class="cv" style="color:${jokerCol}">J</div><div class="cs">🃏</div></div>`;}
-  else{
-    const col=wild?(_daltonien?'#0072B2':'#2e7d32'):scol[c.suit]||'#333';
+  if(c.joker){
+    const jc=_customColors.joker||'#b8860b';
+    el.innerHTML=`<div class="cc"><div class="cv" style="color:${jc}">J</div><div class="cs">🃏</div></div><div class="cm">🃏</div><div class="cc bot"><div class="cv" style="color:${jc}">J</div><div class="cs">🃏</div></div>`;
+  } else {
+    const col=wild?(_customColors.wild||'#2e7d32'):_customColors[c.suit]||SCOL[c.suit]||'#333';
     const vd=dv(c.val);
-    // En mode daltonien, ajoute une petite lettre sous l'enseigne (C=Cœur, K=Carreau, T=Trèfle, P=Pique, E=Étoile)
-    const sLbl=_daltonien?`<span style="font-size:.55em;line-height:1;display:block;opacity:.75">${SLBL_CB[c.suit]||''}</span>`:'';
-    const sCnr=`${c.suit}${sLbl}`;
-    el.innerHTML=`<div class="cc"><div class="cv" style="color:${col}">${vd}</div><div class="cs" style="color:${col}">${sCnr}</div></div><div class="cm" style="color:${col}">${c.suit}</div><div class="cc bot"><div class="cv" style="color:${col}">${vd}</div><div class="cs" style="color:${col}">${sCnr}</div></div>`;
+    el.innerHTML=`<div class="cc"><div class="cv" style="color:${col}">${vd}</div><div class="cs" style="color:${col}">${c.suit}</div></div><div class="cm" style="color:${col}">${c.suit}</div><div class="cc bot"><div class="cv" style="color:${col}">${vd}</div><div class="cs" style="color:${col}">${c.suit}</div></div>`;
   }
   return el;
 }
@@ -2528,6 +2682,8 @@ function onUserLoggedIn(){
   if(hostInp) hostInp.value=CUR_USER.pseudo;
   const joinInp=document.getElementById('join-name');
   if(joinInp) joinInp.value=CUR_USER.pseudo;
+  // Pré-remplir le nom du joueur humain en partie locale
+  if(LSP[0]&&LSP[0].isHuman){LSP[0].name=CUR_USER.pseudo;buildLS();}
   // Mettre à jour le FCM token si disponible
   if(window._fcmToken)updateFcmToken(window._fcmToken);
   startOnlineStatusPolling();
@@ -2535,6 +2691,8 @@ function onUserLoggedIn(){
   if(!window._tokenRefreshInterval)
     window._tokenRefreshInterval=setInterval(ensureFreshToken,1800000);
   loadFriends();
+  loadCustomColors();
+  checkWhatsNew(); // modale "quoi de neuf" si nouvelle version
   show('s-lobby');
 }
 
@@ -2584,6 +2742,7 @@ function showProfile(){
     histEl.innerHTML='<div style="color:var(--text-muted);font-size:.75rem">'+_T('Aucune partie jouée')+'</div>';
   }
   document.getElementById('profile-modal').style.display='flex';
+  renderColorModeSelector();
 }
 
 function closeProfileModal(){
@@ -2616,19 +2775,214 @@ function computeStats(hist){
 }
 
 // ══ THÈME ══
-function toggleDaltonien(){
-  _daltonien=!_daltonien;
-  localStorage.setItem('cinqr_daltonien',_daltonien?'1':'0');
-  applyDaltonien();
-  // Re-rendu des cartes si une partie est en cours
-  if(G)render();
-  if(GS)renderGuest();
+// ══ QUOI DE NEUF ══
+let _wnSlides=[], _wnIdx=0;
+
+function _vGt(a,b){
+  // Compare deux versions type "1.3" > "1.1"
+  const [ma,na]=(a||'0').split('.').map(Number);
+  const [mb,nb]=(b||'0').split('.').map(Number);
+  return ma!==mb?ma>mb:(na||0)>(nb||0);
 }
-function applyDaltonien(){
-  const btn=document.getElementById('cb-btn');
-  if(btn)btn.textContent=_daltonien?'🟡':'👁';
-  document.body.setAttribute('data-daltonien',_daltonien?'true':'false');
+
+async function checkWhatsNew(){
+  if(!CUR_USER)return;
+  let lastV=null;
+  try{
+    const r=await fetch(`${DB_URL}/users/${CUR_USER.uid}/lastSeenVersion.json`);
+    lastV=await r.json(); // null si jamais défini
+  }catch(e){}
+  // Filtre les features non encore vues
+  _wnSlides=WN_FEATURES.filter(f=>!lastV||_vGt(f.v,lastV));
+  if(_wnSlides.length===0)return;
+  _wnIdx=0;
+  setTimeout(()=>{_renderWn();document.getElementById('wn-modal').classList.add('open');},900);
 }
+
+function _renderWn(){
+  const f=_wnSlides[_wnIdx];if(!f)return;
+  const last=_wnIdx===_wnSlides.length-1;
+  // Image / placeholder
+  const imgEl=document.getElementById('wn-img');
+  const phEl=document.getElementById('wn-img-ph');
+  const areaEl=document.getElementById('wn-img-area');
+  imgEl.style.display='block';
+  imgEl.src=f.img||'';
+  phEl.style.display='none';
+  imgEl.onerror=()=>{
+    imgEl.style.display='none';
+    phEl.style.display='flex';
+    phEl.textContent=f.icon;
+    areaEl.style.background=`linear-gradient(135deg,#${(f.bg||'333,555').replace(',','#')})`;
+  };
+  // Forcer le placeholder si pas d'image définie
+  if(!f.img){imgEl.onerror();}
+  // Texte
+  document.getElementById('wn-badge').textContent='Version '+f.v;
+  document.getElementById('wn-title').textContent=f.icon+' '+f.title;
+  document.getElementById('wn-desc').innerHTML=f.desc;
+  // Navigation
+  document.getElementById('wn-prev').disabled=_wnIdx===0;
+  document.getElementById('wn-next').disabled=last;
+  const cta=document.getElementById('wn-cta');
+  cta.classList.toggle('show',last);
+  // Dots
+  const dots=document.getElementById('wn-dots');dots.innerHTML='';
+  _wnSlides.forEach((_,i)=>{
+    const d=document.createElement('div');d.className='wn-dot'+(i===_wnIdx?' on':'');
+    d.onclick=()=>{_wnIdx=i;_renderWn();};
+    dots.appendChild(d);
+  });
+}
+
+function wnGo(dir){
+  _wnIdx=Math.max(0,Math.min(_wnSlides.length-1,_wnIdx+dir));
+  _renderWn();
+}
+
+async function closeWnModal(){
+  document.getElementById('wn-modal').classList.remove('open');
+  if(CUR_USER){
+    try{await fbSet('users/'+CUR_USER.uid+'/lastSeenVersion',APP_VERSION);}catch(e){}
+  }
+}
+
+// ══ CONFIGURATEUR COULEURS ══
+// Couleurs en cours d'édition dans la modale (avant sauvegarde)
+let _editColors = {};
+
+// Clés dans l'ordre d'affichage : 5 enseignes + atout + joker
+const CM_KEYS = ['♥','♣','♠','♦','★','wild','joker'];
+const CM_LABELS = {'♥':'Cœur','♣':'Trèfle','♠':'Pique','♦':'Carreau','★':'Étoile','wild':'Atout','joker':'Joker'};
+
+function _mkMiniCard(key, col, isRef){
+  const isWild = key==='wild', isJoker = key==='joker';
+  const suit = isWild?'♥':isJoker?'🃏':key;
+  const bg = isJoker?'linear-gradient(135deg,#fff9dc,#fff3a0)':isWild?'linear-gradient(135deg,#e8ffe8,#c3f0c3)':'#fff';
+  const inner = isJoker
+    ? `<div class="cmcv" style="color:${col}">J</div><div class="cmcs">🃏</div>`
+    : `<div class="cmcv" style="color:${col}">K</div><div class="cmcs" style="color:${col}">${suit}</div>`;
+  const card = document.createElement('div');
+  card.className='cmc'+(isWild?' wild-card':isJoker?' joker-card':'');
+  card.style.cssText='background:'+bg;
+  card.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center">${inner}</div><div class="cmcm" style="color:${col}">${isJoker?'🃏':suit}</div><div class="cmcbot">${inner}</div>`;
+  return card;
+}
+
+function openColorModal(){
+  _editColors = Object.assign({}, _customColors);
+  _renderColorModal();
+  document.getElementById('color-modal').classList.add('open');
+}
+function closeColorModal(){
+  document.getElementById('color-modal').classList.remove('open');
+}
+
+function _renderColorModal(){
+  // Ligne référence (couleurs standard — non interactives)
+  const refRow = document.getElementById('cm-ref-row');
+  refRow.innerHTML = '';
+  CM_KEYS.forEach(key => {
+    const col = DEFAULT_COLORS[key];
+    const wrap = document.createElement('div'); wrap.className='cmc-wrap';
+    wrap.appendChild(_mkMiniCard(key, col, true));
+    const lbl = document.createElement('div'); lbl.className='cmc-lbl'; lbl.textContent=CM_LABELS[key];
+    wrap.appendChild(lbl);
+    refRow.appendChild(wrap);
+  });
+
+  // Ligne personnalisée (avec color picker)
+  const custRow = document.getElementById('cm-custom-row');
+  custRow.innerHTML = '';
+  CM_KEYS.forEach(key => {
+    const wrap = document.createElement('div'); wrap.className='cmc-wrap';
+    const cardEl = _mkMiniCard(key, _editColors[key]||DEFAULT_COLORS[key], false);
+    cardEl.id = 'cmc-preview-'+key.replace(/[^a-z0-9]/gi,'_');
+    wrap.appendChild(cardEl);
+    const lbl = document.createElement('div'); lbl.className='cmc-lbl'; lbl.textContent=CM_LABELS[key];
+    const inp = document.createElement('input');
+    inp.type='color'; inp.className='cmc-inp';
+    inp.value=_editColors[key]||DEFAULT_COLORS[key];
+    inp.oninput = e => {
+      _editColors[key] = e.target.value;
+      // Mise à jour en temps réel de la mini-carte
+      const preview = document.getElementById('cmc-preview-'+key.replace(/[^a-z0-9]/gi,'_'));
+      if(preview){ const newCard=_mkMiniCard(key,e.target.value,false); newCard.id=preview.id; preview.replaceWith(newCard); }
+    };
+    wrap.appendChild(lbl); wrap.appendChild(inp);
+    custRow.appendChild(wrap);
+  });
+
+  // Boutons presets
+  const presetsEl = document.getElementById('cm-presets');
+  presetsEl.innerHTML = '';
+  Object.entries(COLOR_PRESETS).forEach(([id, preset]) => {
+    const btn = document.createElement('button'); btn.className='cm-preset-btn';
+    btn.textContent = preset.label;
+    btn.onclick = () => {
+      CM_KEYS.forEach(k => { if(preset[k]) _editColors[k]=preset[k]; });
+      _renderColorModal(); // re-render avec les nouvelles couleurs
+    };
+    presetsEl.appendChild(btn);
+  });
+}
+
+function resetCustomColors(){
+  _editColors = Object.assign({}, DEFAULT_COLORS);
+  _renderColorModal();
+}
+
+async function saveAndApplyColors(){
+  _customColors = Object.assign({}, _editColors);
+  applyCustomColors();
+  closeColorModal();
+  if(G)render(); if(GS)renderGuest();
+  // Sauvegarde Firebase
+  localStorage.setItem('cinqr_customcolors', JSON.stringify(_customColors));
+  if(CUR_USER){
+    try{ await fbSet('users/'+CUR_USER.uid+'/settings/cardColors', _customColors); }catch(e){}
+  }
+}
+
+function applyCustomColors(){
+  // Fond wild selon la couleur choisie (teinte claire automatique)
+  const wc = _customColors.wild||'#2e7d32';
+  let styleEl=document.getElementById('wild-bg-style');
+  if(!styleEl){styleEl=document.createElement('style');styleEl.id='wild-bg-style';document.head.appendChild(styleEl);}
+  styleEl.textContent=`.card.wild{background:${_hexToTintGradient(wc)}!important}`;
+}
+
+function _hexToTintGradient(hex){
+  // Crée un dégradé clair à partir d'une couleur hex
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  const t1=`rgb(${Math.min(255,r+180)},${Math.min(255,g+180)},${Math.min(255,b+180)})`;
+  const t2=`rgb(${Math.min(255,r+140)},${Math.min(255,g+140)},${Math.min(255,b+140)})`;
+  return `linear-gradient(135deg,${t1},${t2})`;
+}
+
+async function loadCustomColors(){
+  if(CUR_USER){
+    try{
+      const d=await fbGet('users/'+CUR_USER.uid+'/settings/cardColors');
+      if(d&&typeof d==='object'&&d['♥']){
+        _customColors=Object.assign({},DEFAULT_COLORS,d);
+        applyCustomColors();
+        if(G)render();if(GS)renderGuest();
+        return;
+      }
+    }catch(e){}
+  }
+  const stored=localStorage.getItem('cinqr_customcolors');
+  if(stored){try{_customColors=Object.assign({},DEFAULT_COLORS,JSON.parse(stored));applyCustomColors();}catch(e){}}
+}
+
+// compat aliases pour l'ancien code
+function cycleColorMode(){openColorModal();}
+function applyColorMode(){applyCustomColors();}
+function setColorMode(){}
+function renderColorModeSelector(){}
+function toggleDaltonien(){openColorModal();}
+function applyDaltonien(){applyCustomColors();}
 function toggleTheme(){
   const isLight=document.documentElement.getAttribute('data-theme')==='light';
   const newTheme=isLight?'dark':'light';
@@ -2972,7 +3326,7 @@ window.addEventListener('DOMContentLoaded',()=>{
   applyTheme(localStorage.getItem('cinqr_theme')||'dark');
   _lang=localStorage.getItem('cinqr_lang')||(navigator.language&&!navigator.language.startsWith('fr')?'en':'fr');
   applyLang();
-  applyDaltonien();
+  applyCustomColors();
   initOfflineDetection();
   const restored=tryRestoreSession();
   if(!restored){show('s-auth');}
