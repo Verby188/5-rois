@@ -3350,11 +3350,15 @@ function _autoJoinRoom(d){
     window._pendingRoomJoin=d;
     return;
   }
-  show('s-net');
-  const inp=document.getElementById('join-code');
-  if(inp){inp.value=d.code;if(typeof checkCodeInput==='function')checkCodeInput();}
+  // Pré-remplir le pseudo
   const nameInp=document.getElementById('join-name');
-  if(nameInp)nameInp.value=CUR_USER.pseudo||'';
+  if(nameInp)nameInp.value=CUR_USER.pseudo||'Invité';
+  // Pré-remplir le code et rejoindre directement sans passer par le bouton
+  const inp=document.getElementById('join-code');
+  if(inp){
+    inp.value=d.code;
+    doJoin(); // ← appel direct, pas besoin d'appuyer sur "Rejoindre"
+  }
 }
 
 
