@@ -234,7 +234,8 @@ class MainActivity : AppCompatActivity() {
         if (notifType != null) {
             val code = intent.getStringExtra("code") ?: ""
             val from = intent.getStringExtra("senderName") ?: intent.getStringExtra("from") ?: ""
-            val data = """{"type":"$notifType","code":"$code","from":"$from"}"""
+            val fromTap = intent.getStringExtra("fromTap") ?: "false"
+            val data = """{"type":"$notifType","code":"$code","from":"$from","fromTap":"$fromTap"}"""
             if (::webView.isInitialized && webView.url != null) {
                 injectNotification(data)
             } else {
