@@ -2559,13 +2559,18 @@ function handleDeepLink(url){
   }catch(e){}
 }
 
-// Check URL hash on load (e.g. file:///...#join-XXXXXX)
+// Appelé par MainActivity via evaluateJavascript (warm start ou pendingCode)
+function onDeepLinkCode(code){
+  _autoJoinRoom({code:code.toUpperCase()});
+}
+
+// Check URL hash on load — supporte #invite=CODE (notification) et #join-CODE (SMS)
 function checkHashCode(){
   const h = window.location.hash;
   if(!h) return;
-  const m = h.match(/join[-:]?([A-Za-z]{6})/i);
+  const m = h.match(/(?:invite=|join[-:]?)([A-Za-z]{6})/i);
   if(!m) return;
-  handleDeepLink(`${APP_SCHEME}://join/${m[1]}`);
+  _autoJoinRoom({code:m[1].toUpperCase()});
 }
 
 // Listen for Capacitor deep link plugin (if available)
