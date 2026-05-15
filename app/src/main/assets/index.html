@@ -2692,8 +2692,15 @@ function onUserLoggedIn(){
     window._tokenRefreshInterval=setInterval(ensureFreshToken,1800000);
   loadFriends();
   loadCustomColors();
-  checkWhatsNew(); // modale "quoi de neuf" si nouvelle version
-  show('s-lobby');
+  checkWhatsNew();
+  // Si l'app a été ouverte via un tap sur une notification d'invitation
+  if(window._pendingRoomJoin){
+    const pending=window._pendingRoomJoin;
+    window._pendingRoomJoin=null;
+    setTimeout(()=>_autoJoinRoom(pending),700);
+  } else {
+    show('s-lobby');
+  }
 }
 
 function showProfile(){
@@ -3297,23 +3304,37 @@ function onFcmMessage(data){
   try{
     const d=typeof data==='string'?JSON.parse(data):data;
     if(d.type==='gameInvite'&&d.code){
-      const from=d.senderName||d.from||'Un ami';
-      if(confirm('Invitation reçue !\nRejoindre la partie de '+from+' ?')){
-        show('s-net');
-        const inp=document.getElementById('join-code');
-        if(inp){inp.value=d.code;checkCodeInput();}
-        // Pré-remplir le pseudo si connecté
-        const nameInp=document.getElementById('join-name');
-        if(nameInp&&CUR_USER)nameInp.value=CUR_USER.pseudo;
+      if(d.fromTap==='true'){
+        // Tap sur la notification → rejoindre directement sans confirmation
+        _autoJoinRoom(d);
+      } else {
+        // Notification reçue en avant-plan → dialog
+        const from=d.senderName||d.from||'Un ami';
+        if(confirm('Invitation reçue !\nRejoindre la partie de '+from+' ?')){
+          _autoJoinRoom(d);
+        }
       }
     }else if(d.type==='friendRequest'){
       loadFriends();
     }else if(d.type==='friendDeclined'){
       const from=d.senderName||'Un utilisateur';
-      // Petit toast discret plutôt qu'une alerte
       _showToast(from+' a refusé votre demande d\'ami');
     }
   }catch(e){}
+}
+
+// Rejoindre une salle directement (depuis notif tap ou confirmation)
+function _autoJoinRoom(d){
+  if(!CUR_USER){
+    // Pas encore connecté (app démarrée à froid) → attendre le login
+    window._pendingRoomJoin=d;
+    return;
+  }
+  show('s-net');
+  const inp=document.getElementById('join-code');
+  if(inp){inp.value=d.code;if(typeof checkCodeInput==='function')checkCodeInput();}
+  const nameInp=document.getElementById('join-name');
+  if(nameInp)nameInp.value=CUR_USER.pseudo||'';
 }
 
 
