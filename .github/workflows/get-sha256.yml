@@ -7,6 +7,7 @@ jobs:
       - name: Get SHA256
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
+          STORE_PASS: ${{ secrets.STORE_PASSWORD }}
         run: |
           echo "$KEYSTORE_BASE64" | base64 -d > keystore.jks
-          keytool -list -v -keystore keystore.jks -alias u9game -storepass ${{ secrets.STORE_PASSWORD }} | grep SHA256
+          keytool -list -v -keystore keystore.jks -alias u9game -storepass "$STORE_PASS" -noprompt | grep SHA256
