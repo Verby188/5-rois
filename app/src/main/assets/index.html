@@ -1507,7 +1507,12 @@ function showRoundPopup(){
   btn.onclick=()=>{
     document.getElementById('ov').classList.remove('on');
     document.getElementById('popup').classList.remove('on');
-    if(G.round>=11){G.phase='game_over';broadcast();showEndScreen();}
+    if(G.round>=11){
+      G.phase='game_over';broadcast();
+      // Interstitielle juste avant le classement final
+      if(window.Android&&typeof window.Android.showInterstitial==='function')window.Android.showInterstitial();
+      showEndScreen();
+    }
     else{G.round++;startRound();}
   };
 }
