@@ -17,7 +17,11 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.InstallStateUpdatedListener
@@ -34,6 +38,12 @@ class AndroidBridge(private val activity: MainActivity) {
             activity.appUpdateManager.completeUpdate()
         }
     }
+    @android.webkit.JavascriptInterface
+    fun showInterstitial() {
+        activity.runOnUiThread {
+            activity.showInterstitialAd()
+        }
+    }
 }
 
 class MainActivity : AppCompatActivity() {
@@ -42,6 +52,9 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adView: AdView
     private var pendingCode: String? = null
     private var pendingNotifData: String? = null
+    private var interstitialAd: InterstitialAd? = null
+    // ⚠️ Remplace par l'ID de ton bloc interstitiel AdMob
+    private val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-6145497382360748/1750052165"
 
     // ── In-App Updates ──
     val appUpdateManager by lazy { AppUpdateManagerFactory.create(this) }
@@ -76,6 +89,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         MobileAds.initialize(this)
+        loadInterstitialAd()
 
         // ── Extraire le code d'invitation AVANT de charger la WebView (pattern U9) ──
         val notifType = intent?.getStringExtra("type")
@@ -198,6 +212,38 @@ class MainActivity : AppCompatActivity() {
 
         handleIntent(intent)
         checkForUpdate()
+    }
+
+    // ── Interstitiel fin de partie ──
+    private fun loadInterstitialAd() {
+        InterstitialAd.load(
+            this, INTERSTITIAL_AD_UNIT_ID, AdRequest.Builder().build(),
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialAd = ad
+                    ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                        override fun onAdDismissedFullScreenContent() {
+                            interstitialAd = null
+                            loadInterstitialAd() // Précharger la suivante
+                        }
+                        override fun onAdFailedToShowFullScreenContent(error: com.google.android.gms.ads.AdError) {
+                            interstitialAd = null
+                            loadInterstitialAd()
+                        }
+                    }
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    interstitialAd = null
+                }
+            }
+        )
+    }
+
+    fun showInterstitialAd() {
+        if (interstitialAd != null) {
+            interstitialAd?.show(this)
+        }
+        // Si pas encore chargée, on ignore — le classement s'affiche quand même
     }
 
     // ── In-App Updates ──
