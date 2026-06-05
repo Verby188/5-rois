@@ -22,8 +22,11 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.ump.ConsentDebugSettings
+import com.google.android.ump.ConsentForm
 import com.google.android.ump.ConsentInformation
 import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.FormError
 import com.google.android.ump.UserMessagingPlatform
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
@@ -93,17 +96,15 @@ class MainActivity : AppCompatActivity() {
 
         // ── Consentement RGPD (UMP) → puis initialisation AdMob ──
         val consentParams = ConsentRequestParameters.Builder().build()
-        ConsentInformation.getInstance(this).requestConsentInfoUpdate(
+        val consentInfo = UserMessagingPlatform.getConsentInformation(this)
+        consentInfo.requestConsentInfoUpdate(
             this, consentParams,
             {
-                // Afficher le formulaire de consentement si nécessaire (UE/EEE)
                 UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) {
-                    // Formulaire fermé ou non nécessaire → initialiser AdMob
                     initAds()
                 }
             },
             {
-                // Erreur réseau → initialiser quand même
                 initAds()
             }
         )
@@ -233,7 +234,7 @@ class MainActivity : AppCompatActivity() {
 
     // ── Initialisation AdMob après consentement ──
     private fun initAds() {
-        if (ConsentInformation.getInstance(this).canRequestAds()) {
+        if (UserMessagingPlatform.getConsentInformation(this).canRequestAds()) {
             MobileAds.initialize(this) { loadInterstitialAd() }
             adView.loadAd(AdRequest.Builder().build())
         }
