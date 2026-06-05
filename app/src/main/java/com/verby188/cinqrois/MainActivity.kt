@@ -22,6 +22,9 @@ import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.ump.ConsentInformation
+import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.UserMessagingPlatform
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.InstallStateUpdatedListener
@@ -88,8 +91,22 @@ class MainActivity : AppCompatActivity() {
             or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         )
 
-        MobileAds.initialize(this)
-        loadInterstitialAd()
+        // ── Consentement RGPD (UMP) → puis initialisation AdMob ──
+        val consentParams = ConsentRequestParameters.Builder().build()
+        ConsentInformation.getInstance(this).requestConsentInfoUpdate(
+            this, consentParams,
+            {
+                // Afficher le formulaire de consentement si nécessaire (UE/EEE)
+                UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) {
+                    // Formulaire fermé ou non nécessaire → initialiser AdMob
+                    initAds()
+                }
+            },
+            {
+                // Erreur réseau → initialiser quand même
+                initAds()
+            }
+        )
 
         // ── Extraire le code d'invitation AVANT de charger la WebView (pattern U9) ──
         val notifType = intent?.getStringExtra("type")
@@ -208,10 +225,18 @@ class MainActivity : AppCompatActivity() {
             "file:///android_asset/index.html"
         }
         webView.loadUrl(startUrl)
-        adView.loadAd(AdRequest.Builder().build())
+        // adView.loadAd sera appelé dans initAds() après le consentement
 
         handleIntent(intent)
         checkForUpdate()
+    }
+
+    // ── Initialisation AdMob après consentement ──
+    private fun initAds() {
+        if (ConsentInformation.getInstance(this).canRequestAds()) {
+            MobileAds.initialize(this) { loadInterstitialAd() }
+            adView.loadAd(AdRequest.Builder().build())
+        }
     }
 
     // ── Interstitiel fin de partie ──
