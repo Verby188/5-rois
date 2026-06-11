@@ -25,7 +25,12 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v3
         with:
-          gradle-version: "8.0"
+          gradle-version: "8.7"
+
+      - name: Create google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: echo "$GOOGLE_SERVICES_JSON" > app/google-services.json
 
       - name: Build Release AAB
         run: gradle bundleRelease --no-daemon
@@ -45,6 +50,6 @@ jobs:
       - name: Upload Signed AAB
         uses: actions/upload-artifact@v4
         with:
-          name: 5rois-release
+          name: U9-release
           path: ${{ steps.sign_app.outputs.signedReleaseFile }}
           retention-days: 30
