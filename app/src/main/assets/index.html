@@ -1275,20 +1275,27 @@ async function _joinRoom(){
 function _startGuestPolling(gIdx){
   if(NET._poll)clearInterval(NET._poll);
   let lastState=null;
-  let nullCount=0; // compteur pour détecter déconnexion
+  let nullCount=0;
+  let resyncCount=0; // compteur pour éviter les boucles infinies
+  const MAX_RESYNC=5;
   NET._poll=setInterval(async()=>{
     if(!NET.roomCode)return;
     const state=await fbGet('cinqrois_rooms/'+NET.roomCode+'/state/'+gIdx);
     if(!state){
       nullCount++;
-      // Après 10s sans réponse en cours de partie → tenter resync
-      if(nullCount>=10&&GS){
-        document.getElementById('w-msg').textContent='Reconnexion...';
+      if(nullCount>=10&&GS&&resyncCount<MAX_RESYNC){
+        resyncCount++;
+        document.getElementById('w-msg').textContent='Reconnexion... ('+resyncCount+'/'+MAX_RESYNC+')';
         gsend({action:'resync'});
+      } else if(resyncCount>=MAX_RESYNC){
+        // Hôte définitivement parti → afficher erreur et arrêter
+        clearInterval(NET._poll);NET._poll=null;
+        showWErr('L\'hôte s\'est déconnecté. La partie est terminée.');
+        fbDel('cinqrois_rooms/'+NET.roomCode+'/guests/'+gIdx);
       }
       return;
     }
-    nullCount=0;
+    nullCount=0;resyncCount=0;
     const s=JSON.stringify(state);
     if(s===lastState)return;
     lastState=s;
@@ -1507,12 +1514,7 @@ function showRoundPopup(){
   btn.onclick=()=>{
     document.getElementById('ov').classList.remove('on');
     document.getElementById('popup').classList.remove('on');
-    if(G.round>=11){
-      G.phase='game_over';broadcast();
-      // Interstitielle juste avant le classement final
-      if(window.Android&&typeof window.Android.showInterstitial==='function')window.Android.showInterstitial();
-      showEndScreen();
-    }
+    if(G.round>=11){G.phase='game_over';broadcast();showEndScreen();}
     else{G.round++;startRound();}
   };
 }
