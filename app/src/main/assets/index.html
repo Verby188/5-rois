@@ -1883,7 +1883,8 @@ function render(){
     ch.style.borderColor=i===G.cur?p.color:'';
     const roundInfo=G.phase==='act'&&i===G.cur?`<div class="sc-rd" style="color:${p.color}66">ce tour</div>`
       :(p.roundScore>0?`<div class="sc-rd" style="color:#ef9a9a66">+${p.roundScore}</div>`:'');
-    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div><div class="sc-pt">${p.totalScore}</div>${roundInfo}`;
+    const eChip=G.emojis&&G.emojis[i]&&Date.now()-G.emojis[i].ts<EMOJI_DURATION?`<div style="font-size:.9rem;line-height:1;animation:emoji-pop .3s ease">${G.emojis[i].emoji}</div>`:'';
+    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div><div class="sc-pt">${p.totalScore}</div>${roundInfo}${eChip}`;
     sc.appendChild(ch);
   });
 
@@ -2042,7 +2043,8 @@ function renderGuest(){
     const ch=document.createElement('div');ch.className='sc'+(i===GS.cur?' active':'')+(i===GS.goingOut?' gout':'');
     ch.style.borderColor=i===GS.cur?p.color:'';
     const roundInfo=p.roundScore>0?`<div class="sc-rd" style="color:#ef9a9a66">+${p.roundScore}</div>`:'';
-    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div><div class="sc-pt">${p.totalScore}</div>${roundInfo}`;
+    const eChipG=GS.emojis&&GS.emojis[i]&&Date.now()-GS.emojis[i].ts<EMOJI_DURATION?`<div style="font-size:.9rem;line-height:1;animation:emoji-pop .3s ease">${GS.emojis[i].emoji}</div>`:'';
+    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div><div class="sc-pt">${p.totalScore}</div>${roundInfo}${eChipG}`;
     sc.appendChild(ch);
   });
 
@@ -2186,9 +2188,12 @@ function toggleSound(){
 function openEmojiPicker(btnEl){
   const picker=document.getElementById('emoji-picker');
   if(picker.classList.contains('open')){picker.classList.remove('open');return;}
+  // Centré horizontalement, au-dessus du bouton
   const rect=btnEl.getBoundingClientRect();
   picker.style.bottom=(window.innerHeight-rect.top+8)+'px';
-  picker.style.right=(window.innerWidth-rect.right)+'px';
+  picker.style.left='50%';
+  picker.style.transform='translateX(-50%)';
+  picker.style.right='auto';
   picker.classList.add('open');
   setTimeout(()=>document.addEventListener('click',function h(e){
     if(!picker.contains(e.target)&&e.target!==btnEl){picker.classList.remove('open');document.removeEventListener('click',h);}
