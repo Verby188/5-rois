@@ -663,8 +663,8 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 </div>
 
 <!-- ══ PROFIL MODAL ══ -->
-<div id="profile-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:1.5rem">
-  <div class="scard" style="max-width:340px;width:100%;position:relative">
+<div id="profile-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:1.5rem;overflow:hidden">
+  <div class="scard" style="max-width:340px;width:100%;position:relative;max-height:88vh;overflow-y:auto;overscroll-behavior:contain">
     <button onclick="closeProfileModal()" style="position:absolute;top:.7rem;right:.9rem;background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer">✕</button>
     <div style="display:flex;align-items:center;gap:.8rem;margin-bottom:.5rem">
       <div id="pm-avatar" style="width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:Cinzel,serif;font-size:1.2rem;font-weight:700;flex-shrink:0"></div>
