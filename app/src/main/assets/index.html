@@ -17,6 +17,43 @@
   --inp-bg:rgba(255,255,255,.07);--inp-bd:rgba(255,255,255,.15);
   --bg1:#0f4f28;--bg2:#0a3219;
 }
+/* ══ THÈME GALAXIE (exclusif parrainage) ══ */
+[data-theme="galaxie"]{
+  --felt:#06040f;--gold:#b088ff;--gold2:#d0aaff;--white:#f0ecff;--sh:rgba(0,0,0,.55);
+  --overlay:rgba(18,8,48,.88);--overlay-bd:rgba(176,136,255,.25);
+  --text:#f0ecff;--text-muted:rgba(240,236,255,.4);--text-dim:rgba(240,236,255,.25);
+  --inp-bg:rgba(176,136,255,.07);--inp-bd:rgba(176,136,255,.18);
+  --bg1:#120830;--bg2:#06040f;
+}
+[data-theme="galaxie"] body{
+  background-image:radial-gradient(ellipse 120% 100% at 50% 0%,#120830,#06040f 60%),
+    radial-gradient(ellipse 60% 40% at 80% 20%,rgba(80,0,120,.3),transparent),
+    radial-gradient(ellipse 40% 30% at 20% 80%,rgba(40,0,100,.2),transparent);
+}
+[data-theme="galaxie"] .cback{background:repeating-linear-gradient(45deg,#1a0540,#1a0540 3px,#120030 3px,#120030 6px)}
+[data-theme="galaxie"] .scard,[data-theme="galaxie"] .auth-box,[data-theme="galaxie"] .room-code-box{background:var(--overlay);border-color:var(--overlay-bd)}
+[data-theme="galaxie"] .popup{background:#0c0528}
+[data-theme="galaxie"] .lbtn{background:rgba(100,50,180,.12);border-color:rgba(176,136,255,.25);color:var(--text)}
+[data-theme="galaxie"] .lbtn:hover{background:rgba(176,136,255,.15);border-color:var(--gold)}
+
+/* ══ THÈME NUIT POURPRE (exclusif parrainage) ══ */
+[data-theme="nuit"]{
+  --felt:#160420;--gold:#ff6db3;--gold2:#ffaacc;--white:#fff0f8;--sh:rgba(0,0,0,.5);
+  --overlay:rgba(30,4,45,.88);--overlay-bd:rgba(255,109,179,.25);
+  --text:#fff0f8;--text-muted:rgba(255,240,248,.4);--text-dim:rgba(255,240,248,.25);
+  --inp-bg:rgba(255,109,179,.07);--inp-bd:rgba(255,109,179,.18);
+  --bg1:#2d0a3e;--bg2:#160420;
+}
+[data-theme="nuit"] body{
+  background-image:radial-gradient(ellipse 120% 100% at 50% 0%,#2d0a3e,#160420 60%),
+    radial-gradient(ellipse 50% 40% at 70% 30%,rgba(150,0,100,.2),transparent);
+}
+[data-theme="nuit"] .cback{background:repeating-linear-gradient(45deg,#3d0a5e,#3d0a5e 3px,#280545 3px,#280545 6px)}
+[data-theme="nuit"] .scard,[data-theme="nuit"] .auth-box,[data-theme="nuit"] .room-code-box{background:var(--overlay);border-color:var(--overlay-bd)}
+[data-theme="nuit"] .popup{background:#1e0430}
+[data-theme="nuit"] .lbtn{background:rgba(180,50,120,.12);border-color:rgba(255,109,179,.25);color:var(--text)}
+[data-theme="nuit"] .lbtn:hover{background:rgba(255,109,179,.15);border-color:var(--gold)}
+
 /* ══ THÈME CLAIR ══ */
 [data-theme="light"]{
   --felt:#ddeedd;--gold:#8a6500;--gold2:#b8870b;--white:#1a1a1a;--sh:rgba(0,0,0,.18);
@@ -560,6 +597,44 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 .profile-badge{display:flex;align-items:center;gap:.5rem;font-size:.78rem;color:rgba(255,255,255,.6);cursor:pointer;padding:.3rem .6rem;border:1px solid rgba(255,255,255,.1);border-radius:8px;margin-top:.3rem}
 .profile-badge:hover{border-color:rgba(200,160,0,.3);color:var(--gold)}
 
+/* ══ SPECTATEUR ══ */
+#s-spectator{justify-content:flex-start;padding:.7rem;gap:.5rem;overflow-y:auto}
+.spec-hdr{width:100%;background:rgba(0,0,0,.3);border:1px solid rgba(200,160,0,.18);
+  border-radius:10px;padding:.5rem .8rem;display:flex;justify-content:space-between;align-items:center}
+.spec-badge{background:rgba(66,165,245,.15);border:1px solid rgba(66,165,245,.4);border-radius:20px;
+  padding:.15rem .6rem;font-size:.65rem;color:#90caf9;font-family:'Cinzel',serif}
+.spec-players{display:flex;flex-direction:column;gap:.5rem;width:100%}
+.spec-player{background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.07);
+  border-radius:10px;padding:.5rem .7rem}
+.spec-player.active{border-color:var(--gold);background:rgba(200,160,0,.07)}
+.spec-player.gout{border-color:#66bb6a}
+.spec-pname{display:flex;align-items:center;gap:.4rem;margin-bottom:.35rem;
+  font-family:'Cinzel',serif;font-size:.72rem}
+.spec-hand{display:flex;flex-wrap:wrap;gap:4px}
+.spec-disc{display:flex;align-items:center;gap:.7rem;padding:.35rem 0}
+
+/* ══ CLASSEMENT ══ */
+.lb-row{display:flex;align-items:center;gap:.6rem;padding:.55rem .7rem;
+  background:rgba(0,0,0,.25);border-radius:10px;border:1px solid rgba(255,255,255,.06)}
+.lb-row.me{border-color:rgba(200,160,0,.4);background:rgba(200,160,0,.08)}
+.lb-row.top1{border-color:rgba(240,200,48,.5);background:rgba(240,200,48,.07)}
+.lb-rank{font-family:'Cinzel',serif;font-size:.85rem;width:28px;text-align:center;flex-shrink:0}
+.lb-av{font-size:1.2rem;width:30px;text-align:center;flex-shrink:0}
+.lb-name{flex:1;font-size:.85rem;font-family:'Cinzel',serif}
+.lb-stats{display:flex;flex-direction:column;align-items:flex-end;gap:1px;flex-shrink:0}
+.lb-main{font-family:'Cinzel',serif;font-size:.82rem;color:var(--gold2)}
+.lb-sub{font-size:.62rem;color:rgba(255,255,255,.35)}
+.av-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:.4rem;margin-top:.4rem}
+.av-btn{font-size:1.5rem;width:44px;height:44px;border-radius:10px;border:2px solid transparent;
+  background:rgba(255,255,255,.05);cursor:pointer;transition:.15s;
+  display:flex;align-items:center;justify-content:center}
+.av-btn:hover{background:rgba(255,255,255,.12);transform:scale(1.1)}
+.av-btn.sel{border-color:var(--gold);background:rgba(200,160,0,.15)}
+.av-display{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;
+  justify-content:center;font-size:1.6rem;flex-shrink:0}
+.av-sm{width:28px;height:28px;font-size:1.1rem}
+.av-xs{width:20px;height:20px;font-size:.85rem}
+
 </style>
 </head>
 <body>
@@ -600,6 +675,26 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
     </div>
     <div id="pm-stats" style="display:flex;gap:.5rem;flex-wrap:wrap;margin:.3rem 0"></div>
     <div id="pm-history" style="font-size:.75rem;color:var(--text-muted);margin-top:.2rem"></div>
+    <!-- ── Avatar ── -->
+    <div style="margin-top:.7rem;border-top:1px solid var(--border);padding-top:.6rem">
+      <div style="font-family:Cinzel,serif;font-size:.68rem;color:var(--gold);margin-bottom:.4rem;letter-spacing:.05em">🖼️ Avatar</div>
+      <div class="av-grid" id="pm-av-grid"></div>
+    </div>
+    <!-- ── Parrainage ── -->
+    <div style="margin-top:.7rem;border-top:1px solid var(--border);padding-top:.6rem">
+      <div style="font-family:Cinzel,serif;font-size:.68rem;color:var(--gold);margin-bottom:.5rem;letter-spacing:.05em">🎁 Parrainage</div>
+      <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem">
+        <div style="font-size:.72rem;color:var(--text-muted)">Ton code :</div>
+        <div id="pm-ref-code" style="font-family:Cinzel,serif;font-size:.95rem;color:var(--gold2);letter-spacing:.2em"></div>
+        <button onclick="copyReferralCode()" style="padding:.2rem .5rem;border:1px solid rgba(200,160,0,.35);border-radius:6px;background:none;color:var(--gold);font-size:.65rem;cursor:pointer;font-family:Cinzel,serif" id="pm-ref-copy">Copier</button>
+      </div>
+      <div id="pm-ref-count" style="font-size:.72rem;color:var(--text-muted);margin-bottom:.5rem"></div>
+      <!-- Thèmes débloqués -->
+      <div id="pm-themes-section" style="display:none">
+        <div style="font-size:.65rem;color:var(--text-muted);margin-bottom:.35rem">Thèmes débloqués :</div>
+        <div id="pm-themes" style="display:flex;gap:.4rem;flex-wrap:wrap"></div>
+      </div>
+    </div>
     <button class="gbtn" style="margin-top:.5rem;background:linear-gradient(135deg,#b71c1c,#e53935)" onclick="doLogout()">Se déconnecter</button>
   </div>
 </div>
@@ -683,6 +778,9 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
     <div id="auth-pseudo-row" style="display:none">
       <input class="auth-inp" id="auth-pseudo" placeholder="Pseudo (ex: Mathieu)" maxlength="14">
     </div>
+    <div id="auth-referral-row" style="display:none">
+      <input class="auth-inp" id="auth-referral" placeholder="Code de parrainage (optionnel)" maxlength="6" style="text-transform:uppercase">
+    </div>
     <input class="auth-inp" id="auth-email" placeholder="Email" type="email">
     <input class="auth-inp" id="auth-pwd" placeholder="Mot de passe" type="password">
     <div class="auth-err" id="auth-err"></div>
@@ -712,9 +810,13 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
       <span class="lbtn-icon">👥</span>
       <div><div>Amis</div><div id="friends-btn-sub" class="lbtn-sub">Gérer votre liste d'amis</div></div>
     </button>
+    <button class="lbtn" onclick="openLeaderboard()">
+      <span class="lbtn-icon">🏆</span>
+      <div><div>Classement global</div><div class="lbtn-sub">Victoires, % victoires, score moyen</div></div>
+    </button>
   </div>
   <div id="lobby-profile" class="profile-badge" onclick="showProfile()" style="display:none">
-    <span id="lobby-avatar" style="width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700"></span>
+    <span id="lobby-avatar" class="av-display av-xs"></span>
     <span id="lobby-pseudo-lbl"></span>
     <span style="margin-left:auto;font-size:.65rem;opacity:.5">▼</span>
   </div>
@@ -819,6 +921,49 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
     <!-- Liste d'amis -->
     <div class="slbl" style="font-family:'Cinzel',serif;font-size:.65rem;color:rgba(200,160,0,.6);letter-spacing:.2em;text-transform:uppercase;margin-bottom:.4rem">Mes amis</div>
     <div id="friends-list"><div style="color:rgba(255,255,255,.3);font-size:.85rem;padding:.5rem">Aucun ami pour l'instant</div></div>
+  </div>
+</div>
+
+<!-- ══ CLASSEMENT GLOBAL ══ -->
+<div id="s-leaderboard" class="scr" style="justify-content:flex-start;padding:1.5rem 1rem;overflow-y:auto;gap:0">
+  <div style="width:100%;max-width:480px;margin:0 auto">
+    <button class="back-btn" onclick="show('s-lobby')" style="margin-bottom:1rem">← Retour</button>
+    <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.2rem;margin-bottom:.8rem;text-align:center">🏆 Classement Global</h2>
+
+    <!-- Tri -->
+    <div style="display:flex;gap:.4rem;margin-bottom:1rem;justify-content:center" id="lb-sort-btns">
+      <button class="bsm gold" id="lb-sort-wins" onclick="lbSetSort('wins')">🥇 Victoires</button>
+      <button class="bsm" id="lb-sort-pct" onclick="lbSetSort('pct')">% Victoires</button>
+      <button class="bsm" id="lb-sort-avg" onclick="lbSetSort('avg')">📊 Moy. score</button>
+    </div>
+
+    <!-- Ma position -->
+    <div id="lb-my-rank" style="display:none;background:rgba(200,160,0,.1);border:1px solid rgba(200,160,0,.3);border-radius:10px;padding:.6rem .9rem;margin-bottom:.8rem;font-size:.8rem;text-align:center;font-family:Cinzel,serif;color:var(--gold)"></div>
+
+    <!-- Liste -->
+    <div id="lb-list" style="display:flex;flex-direction:column;gap:.4rem">
+      <div style="color:rgba(255,255,255,.3);font-size:.85rem;text-align:center;padding:2rem">Chargement…</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SPECTATEUR ══ -->
+<div id="s-spectator" class="scr">
+  <div class="spec-hdr">
+    <div class="rlbl"><span id="spec-rlbl">Manche 1/11</span><span class="bpill" id="spec-blbl">Bonus: 3</span></div>
+    <span class="spec-badge">👁️ Spectateur</span>
+    <button class="back-btn" style="margin:0" onclick="abortSpectator()">✕</button>
+  </div>
+  <div id="spec-scores" style="display:flex;gap:.35rem;flex-wrap:wrap;width:100%"></div>
+  <div class="spec-disc">
+    <div class="pilew"><div class="plbl">Défausse</div><div id="spec-disc"></div></div>
+    <div class="msgb" id="spec-msg" style="flex:1">…</div>
+    <div class="pilew"><div class="plbl">Pioche</div><div id="spec-deck"></div><div class="dcnt" id="spec-dcnt"></div></div>
+  </div>
+  <div class="spec-players" id="spec-players"></div>
+  <div id="spec-end" style="display:none;background:rgba(200,160,0,.1);border:1px solid rgba(200,160,0,.3);border-radius:12px;padding:1rem;text-align:center;width:100%">
+    <div style="font-family:Cinzel,serif;color:var(--gold);font-size:1rem;margin-bottom:.5rem" id="spec-winner"></div>
+    <button class="btn" style="background:rgba(255,255,255,.08);color:rgba(255,255,255,.7)" onclick="abortSpectator()">Retour au lobby</button>
   </div>
 </div>
 
@@ -945,7 +1090,11 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
   <div class="logo" style="font-size:2.5rem">🏆</div>
   <div class="wbanner" id="wbanner"></div>
   <div class="ecard"><table><thead><tr><th>Joueur</th><th>Score</th><th>Rang</th></tr></thead><tbody id="etbody"></tbody></table></div>
-  <button class="btn bgreen" style="padding:.8rem 2rem" onclick="backToSetup()">Nouvelle Partie</button>
+  <div style="display:flex;gap:.7rem;flex-wrap:wrap;justify-content:center;width:100%;max-width:340px">
+    <button class="btn bgreen" id="rematch-btn" style="display:none;flex:1;padding:.8rem 1rem" onclick="doRematch()">🔄 Revanche !</button>
+    <button class="btn" style="flex:1;padding:.8rem 1rem;background:rgba(255,255,255,.08);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.15)" onclick="backToSetup()">Quitter</button>
+  </div>
+  <div id="rematch-status" style="display:none;font-size:.8rem;color:rgba(255,255,255,.4);font-style:italic;text-align:center"></div>
 </div>
 
 <div class="ov" id="ov"></div>
@@ -972,7 +1121,9 @@ const COLOR_PRESETS={
 };
 let _customColors=Object.assign({},DEFAULT_COLORS);
 const SLBL={'★':'E','♥':'C','♣':'T','♠':'P','♦':'K'};
-let _soundEnabled = localStorage.getItem('cinqr_sound') !== '0'; // activé par défaut
+const AVATARS=['👑','🦁','🐺','🐉','🦊','🐸','🐧','🦄','🎯','🔥','⚡','🌟','💎','🎭','🦅','🐻','🐯','🦋','🌙','☀️'];
+let _myAvatar=localStorage.getItem('cinqr_avatar')||'👑';
+let _soundEnabled = localStorage.getItem('cinqr_sound') !== '0';
 const EMOJI_DURATION = 3000; // ms d'affichage
 
 // ══ QUOI DE NEUF ══
@@ -1006,7 +1157,7 @@ const PCOLORS=['#f0c830','#ef5350','#42a5f5','#66bb6a','#ab47bc','#ff7043','#26c
 const pc=i=>PCOLORS[i%PCOLORS.length];
 function dv(v){return{11:'V',12:'D',13:'R'}[v]||String(v)}
 function show(id){
-  ['s-auth','s-lobby','s-local','s-net','s-waiting','game','endscreen','s-rules','s-friends'].forEach(s=>{
+  ['s-auth','s-lobby','s-local','s-net','s-waiting','game','endscreen','s-rules','s-friends','s-leaderboard','s-spectator'].forEach(s=>{
     const el=document.getElementById(s);
     if(!el)return;
     el.classList.toggle('on',s===id);
@@ -1121,7 +1272,7 @@ function setBadge(){
   if(!NET.mode){b.style.display='none';return}
   b.style.display='block';
   b.className='net-badge '+(NET.mode==='host'?'host':'guest');
-  b.textContent=NET.mode==='host'?`Hôte · ${NET.roomCode}`:`Invité · ${NET.roomCode}`;
+  b.textContent=NET.mode==='host'?`Hôte · ${NET.roomCode}`:NET.mode==='spectator'?`👁️ ${NET.roomCode}`:`Invité · ${NET.roomCode}`;
 }
 
 async function fbGet(path){
@@ -1195,6 +1346,8 @@ function _startHostPolling(){
           const i=parseInt(idx);
           if(i>0&&!NET._guestNames[i]){
             NET._guestNames[i]=(g&&g.name)||(('Joueur ')+(i+1));
+            NET._guestAvatars=NET._guestAvatars||{};
+            NET._guestAvatars[i]=(g&&g.avatar)||'👤';
             updateWaitingList();
             checkCanStart();
             fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+i,{t:'welcome',playerIdx:i,hostName:NET._hostName,expectedHumans:NET.expectedHumans,numAI:NET.numAI});
@@ -1256,16 +1409,17 @@ function hostStart(){
   saveSession();
   if(!G){
     const players=[];
-    players.push({isHuman:true,name:NET._hostName||'Hôte',color:pc(0)});
+    players.push({isHuman:true,name:NET._hostName||'Hôte',color:pc(0),avatar:_myAvatar});
     const connectedGuests=Object.entries(NET._guestNames).sort((a,b)=>a[0]-b[0]);
     connectedGuests.forEach(([idx,name],i)=>{
-      players.push({isHuman:true,name:name||'Joueur '+(i+2),color:pc(i+1)});
+      players.push({isHuman:true,name:name||'Joueur '+(i+2),color:pc(i+1),avatar:(NET._guestAvatars&&NET._guestAvatars[idx])||'👤'});
     });
     const humanCount=players.length;
     // Limiter les IA pour ne pas dépasser 8 joueurs au total
     const maxAI=Math.min(NET_AI, 8-humanCount);
     for(let i=0;i<maxAI;i++)players.push({isHuman:false,name:'IA '+(i+1),color:pc(humanCount+i)});
     NET.expectedHumans=humanCount;
+    fbSet('cinqrois_rooms/'+NET.roomCode+'/started',true);
     startGame(players);
   }
 }
@@ -1287,9 +1441,20 @@ async function _joinRoom(){
   const name=document.getElementById('join-name').value.trim()||'Invité';
   const room=await fbGet('cinqrois_rooms/'+NET.roomCode);
   if(!room){showWErr('Code introuvable. Vérifiez le code.');return;}
-  // Vérifier que la salle n'est pas fantôme (hôte absent > 5 min)
   const lastSeen=room.lastSeen||room.created||0;
   if(Date.now()-lastSeen>300000){showWErr('Cette partie semble inactive. Demandez un nouveau code.');return;}
+  // Partie déjà démarrée → proposer mode spectateur
+  if(room.started){
+    document.getElementById('w-msg').textContent='Cette partie est déjà en cours.';
+    document.getElementById('w-err').textContent='';document.getElementById('w-err').style.display='none';
+    const wlist=document.getElementById('w-list');
+    wlist.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;gap:.7rem;padding:1rem">
+      <div style="font-size:.85rem;color:rgba(255,255,255,.5)">Rejoindre comme spectateur ?</div>
+      <button class="gbtn" style="max-width:220px" onclick="doJoinSpectator()">👁️ Regarder la partie</button>
+      <button class="back-btn" onclick="abortNet()">← Annuler</button>
+    </div>`;
+    return;
+  }
   NET.expectedHumans=room.expectedHumans;
   NET.numAI=room.numAI;
   const guests=room.guests||{};
@@ -1297,7 +1462,7 @@ async function _joinRoom(){
   let gIdx=1;while(used.includes(gIdx)&&gIdx<8)gIdx++;
   if(gIdx>=8){showWErr('La partie est complète.');return;}
   NET.myIdx=gIdx;
-  await fbSet('cinqrois_rooms/'+NET.roomCode+'/guests/'+gIdx,{name,connected:true,joined:Date.now()});
+  await fbSet('cinqrois_rooms/'+NET.roomCode+'/guests/'+gIdx,{name,avatar:_myAvatar,connected:true,joined:Date.now()});
   saveSession();
   document.getElementById('w-msg').textContent='Connecté ! En attente du démarrage...';
   _startGuestPolling(gIdx);
@@ -1351,8 +1516,14 @@ function _startGuestPolling(gIdx){
     }
     if(state.t==='state'){
       const wasGame=GS!==null;
+      const wasOver=GS&&GS.gameOver;
       GS=state;
-      if(!wasGame){show('game');setBadge();}
+      // Revanche détectée : l'hôte a relancé une partie
+      if(wasOver&&!GS.gameOver){
+        GSL={selCard:null,meldGroups:[],sortBy:null};
+        show('game');setBadge();
+        document.getElementById('rematch-status').style.display='none';
+      } else if(!wasGame){show('game');setBadge();}
       const prevCur=wasGame?(GS._prevCur??-1):-1;
       if(GS.cur===GS.myIdx){
         if(!wasGame||prevCur!==GS.myIdx){
@@ -1380,6 +1551,8 @@ function broadcast(){
   for(let gi=1;gi<NET.expectedHumans;gi++){
     fbSet('cinqrois_rooms/'+NET.roomCode+'/state/'+gi,buildPkt(gi));
   }
+  // Spectateurs : paquet avec toutes les mains visibles
+  fbSet('cinqrois_rooms/'+NET.roomCode+'/spectator_state',buildSpectatorPkt());
 }
 
 function buildPkt(pi){
@@ -1395,11 +1568,103 @@ function buildPkt(pi){
     myHand:G.players[pi].hand.map(function(c){return Object.assign({},c)}),
     exposedMelds:G.exposedMelds||null,
     exposedBy:G.exposedBy!=null?G.exposedBy:null,
-    players:G.players.map(function(p){return{name:p.name,color:p.color,isHuman:p.isHuman,handCount:p.hand.length,roundScore:p.roundScore,totalScore:p.totalScore}}),
+    players:G.players.map(function(p){return{name:p.name,color:p.color,isHuman:p.isHuman,handCount:p.hand.length,roundScore:p.roundScore,totalScore:p.totalScore,avatar:p.avatar||''}}),
     gameOver:G.phase==='game_over',
     finalScores:G.phase==='game_over'?G.players.map(function(p){return{name:p.name,color:p.color,totalScore:p.totalScore}}):null,
     emojis:G.emojis||{},
   };
+}
+
+function buildSpectatorPkt(){
+  if(!G)return null;
+  const bv=getBV();
+  return{
+    t:'spectator_state',
+    round:G.round,bv,phase:G.phase,cur:G.cur,goingOut:G.goingOut,
+    deckCount:G.deck.length,
+    discardTop:G.discard.length?Object.assign({},G.discard[G.discard.length-1]):null,
+    msg:G.msg,
+    players:G.players.map(p=>({
+      name:p.name,color:p.color,avatar:p.avatar||'',isHuman:p.isHuman,
+      hand:p.hand.map(c=>Object.assign({},c)), // toutes les cartes visibles
+      roundScore:p.roundScore,totalScore:p.totalScore
+    })),
+    gameOver:G.phase==='game_over',
+    finalScores:G.phase==='game_over'?G.players.map(p=>({name:p.name,color:p.color,totalScore:p.totalScore})):null
+  };
+}
+
+function doJoinSpectator(){
+  NET.mode='spectator';
+  show('s-spectator');
+  setBadge();
+  document.getElementById('spec-end').style.display='none';
+  _startSpectatorPolling();
+}
+
+function _startSpectatorPolling(){
+  if(NET._poll)clearInterval(NET._poll);
+  let lastState=null;
+  NET._poll=setInterval(async()=>{
+    if(!NET.roomCode)return;
+    const state=await fbGet('cinqrois_rooms/'+NET.roomCode+'/spectator_state');
+    if(!state)return;
+    const s=JSON.stringify(state);
+    if(s===lastState)return;
+    lastState=s;
+    renderSpectator(state);
+  },1200);
+}
+
+function renderSpectator(s){
+  if(!s)return;
+  const bv=s.bv;
+  // Header
+  document.getElementById('spec-rlbl').textContent=`Manche ${s.round}/11`;
+  document.getElementById('spec-blbl').textContent=`Bonus: ${dv(bv)}`;
+  // Scores
+  const sc=document.getElementById('spec-scores');sc.innerHTML='';
+  s.players.forEach((p,i)=>{
+    const ch=document.createElement('div');ch.className='sc'+(i===s.cur?' active':'')+(i===s.goingOut?' gout':'');
+    ch.style.borderColor=i===s.cur?p.color:'';
+    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.avatar||''}${p.name}</div><div class="sc-pt">${p.totalScore}</div>`;
+    sc.appendChild(ch);
+  });
+  // Défausse
+  const disp=document.getElementById('spec-disc');disp.innerHTML='';
+  if(s.discardTop)disp.appendChild(mkCEl(s.discardTop,bv,false));
+  else disp.innerHTML='<div class="eslot">Vide</div>';
+  // Pioche
+  document.getElementById('spec-deck').innerHTML='';
+  document.getElementById('spec-deck').appendChild(mkBack(false));
+  document.getElementById('spec-dcnt').textContent=s.deckCount+' cartes';
+  // Message
+  document.getElementById('spec-msg').textContent=s.msg||'';
+  // Joueurs avec mains
+  const pl=document.getElementById('spec-players');pl.innerHTML='';
+  s.players.forEach((p,i)=>{
+    const div=document.createElement('div');
+    div.className='spec-player'+(i===s.cur?' active':'')+(i===s.goingOut?' gout':'');
+    const nm=document.createElement('div');nm.className='spec-pname';
+    nm.style.color=i===s.cur?p.color:'rgba(255,255,255,.6)';
+    nm.innerHTML=`<div style="width:9px;height:9px;border-radius:50%;background:${p.color};flex-shrink:0"></div>${p.avatar?`<span>${p.avatar}</span>`:''}<span>${p.name}${i===s.goingOut?' ✓':''}</span>${i===s.cur?`<span class="opp-thinking"><span></span><span></span><span></span></span>`:''}`;
+    const hand=document.createElement('div');hand.className='spec-hand';
+    (p.hand||[]).forEach(c=>hand.appendChild(mkCEl(c,bv,true)));
+    if(!(p.hand||[]).length){hand.innerHTML='<span style="font-size:.7rem;color:rgba(255,255,255,.25);font-style:italic">Main vide</span>';}
+    div.appendChild(nm);div.appendChild(hand);pl.appendChild(div);
+  });
+  // Fin de partie
+  if(s.gameOver&&s.finalScores){
+    const sorted=[...s.finalScores].sort((a,b)=>a.totalScore-b.totalScore);
+    document.getElementById('spec-winner').textContent=`🏆 ${sorted[0].name} remporte la partie avec ${sorted[0].totalScore} pts !`;
+    document.getElementById('spec-end').style.display='block';
+  }
+}
+
+function abortSpectator(){
+  if(NET._poll){clearInterval(NET._poll);NET._poll=null;}
+  NET.roomCode='';NET.mode=null;
+  setBadge();show('s-lobby');
 }
 
 function _cleanupNet(){
@@ -1436,7 +1701,7 @@ function numHumans(){return G.players.filter(p=>p.isHuman).length}
 
 function startLocal(){
   if(!LSP.some(p=>p.isHuman)){alert('Il faut au moins un joueur humain !');return;}
-  const players=LSP.map((sp,i)=>({isHuman:sp.isHuman,name:sp.name||`J${i+1}`,color:pc(i)}));
+  const players=LSP.map((sp,i)=>({isHuman:sp.isHuman,name:sp.name||`J${i+1}`,color:pc(i),avatar:i===0?_myAvatar:''}));
   show('game');startGame(players);
 }
 
@@ -1575,10 +1840,14 @@ function showEndScreen(){
     tr.innerHTML=`<td><div style="display:flex;align-items:center;gap:.5rem"><div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></div>${p.name}</div></td><td>${p.totalScore}</td><td>${['🥇','🥈','🥉','4e','5e','6e','7e','8e'][r]}</td>`;
     tb.appendChild(tr);
   });
-  // Confettis pour le gagnant local
   if(sorted[0].orig===0||(NET.mode==='host'&&sorted[0].orig===0)||!NET.mode)launchConfetti(sorted[0].color);
-  // Sauvegarder l'historique
   saveGameHistory(sorted);
+  // Bouton revanche : hôte et local uniquement
+  const rb=document.getElementById('rematch-btn');
+  const rs=document.getElementById('rematch-status');
+  if(NET.mode==='host'){rb.style.display='flex';rs.style.display='none';}
+  else if(!NET.mode){rb.style.display='flex';rs.style.display='none';} // local
+  else{rb.style.display='none';}
 }
 
 function showEndFromGS(){
@@ -1591,10 +1860,29 @@ function showEndFromGS(){
     tr.innerHTML=`<td><div style="display:flex;align-items:center;gap:.5rem"><div style="width:10px;height:10px;border-radius:50%;background:${p.color};flex-shrink:0"></div>${p.name}</div></td><td>${p.totalScore}</td><td>${['🥇','🥈','🥉','4e','5e','6e','7e','8e'][r]}</td>`;
     tb.appendChild(tr);
   });
-  // Confettis si le guest a gagné
   const myName=GS.players[GS.myIdx]?.name;
   if(sorted[0].name===myName)launchConfetti(sorted[0].color);
   saveGameHistory(sorted);
+  // Guest : cacher le bouton revanche, afficher statut d'attente
+  document.getElementById('rematch-btn').style.display='none';
+  const rs=document.getElementById('rematch-status');
+  rs.style.display='block';rs.textContent='En attente d\'une revanche de l\'hôte…';
+}
+
+function doRematch(){
+  if(!G&&!NET.mode)return;
+  document.getElementById('rematch-btn').style.display='none';
+  document.getElementById('rematch-status').style.display='none';
+  if(!NET.mode){
+    // Local : recréer avec mêmes joueurs, scores remis à zéro
+    const players=G.players.map(p=>({isHuman:p.isHuman,name:p.name,color:p.color}));
+    show('game');startGame(players);
+  } else if(NET.mode==='host'){
+    // Réseau : garder même salle et mêmes guests, repartir depuis round 1
+    const players=G.players.map(p=>({isHuman:p.isHuman,name:p.name,color:p.color}));
+    G=null;GS=null;
+    startGame(players); // startGame appelle show('game') + broadcast
+  }
 }
 
 function backToSetup(){
@@ -1884,7 +2172,8 @@ function render(){
     const roundInfo=G.phase==='act'&&i===G.cur?`<div class="sc-rd" style="color:${p.color}66">ce tour</div>`
       :(p.roundScore>0?`<div class="sc-rd" style="color:#ef9a9a66">+${p.roundScore}</div>`:'');
     const eChip=G.emojis&&G.emojis[i]&&Date.now()-G.emojis[i].ts<EMOJI_DURATION?`<div style="font-size:.9rem;line-height:1;animation:emoji-pop .3s ease">${G.emojis[i].emoji}</div>`:'';
-    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div><div class="sc-pt">${p.totalScore}</div>${roundInfo}${eChip}`;
+    const avChip=p.avatar?`<div style="font-size:.75rem;line-height:1">${p.avatar}</div>`:'';
+    ch.innerHTML=`<div class="sc-nm" style="color:${p.color}aa">${p.name}</div>${avChip}<div class="sc-pt">${p.totalScore}</div>${roundInfo}${eChip}`;
     sc.appendChild(ch);
   });
 
@@ -2184,6 +2473,47 @@ function toggleSound(){
   document.getElementById('sound-btn').textContent=_soundEnabled?'🔊':'🔇';
 }
 
+// ══ AVATAR ══
+async function setAvatar(emoji){
+  _myAvatar=emoji;
+  localStorage.setItem('cinqr_avatar',emoji);
+  if(CUR_USER){try{await fbSet('users/'+CUR_USER.uid+'/avatar',emoji);}catch(e){}}
+  updateAvatarDisplay();
+  renderAvatarPicker();
+}
+
+async function loadAvatar(){
+  if(CUR_USER){
+    try{
+      const av=await fbGet('users/'+CUR_USER.uid+'/avatar');
+      if(av){_myAvatar=av;localStorage.setItem('cinqr_avatar',av);}
+    }catch(e){}
+  }
+  updateAvatarDisplay();
+}
+
+function updateAvatarDisplay(){
+  // Lobby badge
+  const la=document.getElementById('lobby-avatar');
+  if(la)la.textContent=_myAvatar;
+  // Profile modal avatar
+  const pa=document.getElementById('pm-avatar');
+  if(pa){pa.textContent=_myAvatar;pa.style.background='rgba(200,160,0,.15)';pa.style.fontSize='1.6rem';}
+}
+
+function renderAvatarPicker(){
+  const grid=document.getElementById('pm-av-grid');
+  if(!grid)return;
+  grid.innerHTML='';
+  AVATARS.forEach(emoji=>{
+    const btn=document.createElement('button');
+    btn.className='av-btn'+(emoji===_myAvatar?' sel':'');
+    btn.textContent=emoji;
+    btn.onclick=()=>setAvatar(emoji);
+    grid.appendChild(btn);
+  });
+}
+
 // ══ EMOJI ══
 function openEmojiPicker(btnEl){
   const picker=document.getElementById('emoji-picker');
@@ -2444,6 +2774,117 @@ function saveGameHistory(sorted){
     if(hist.length>10)hist.splice(10);
     localStorage.setItem(key,JSON.stringify(hist));
   }catch(e){}
+  // Mise à jour classement global Firebase
+  updateLeaderboard(sorted);
+}
+
+async function updateLeaderboard(sorted){
+  if(!CUR_USER)return;
+  try{
+    const myEntry=sorted.find(p=>p.name===CUR_USER.pseudo);
+    if(!myEntry)return;
+    const myScore=myEntry.totalScore;
+    const won=sorted[0].name===CUR_USER.pseudo; // plus bas score = gagnant
+    // Lire l'entrée actuelle
+    const cur=await fbGet('leaderboard/'+CUR_USER.uid)||{wins:0,games:0,totalScore:0};
+    const newEntry={
+      pseudo:CUR_USER.pseudo,
+      avatar:_myAvatar||'👑',
+      wins:(cur.wins||0)+(won?1:0),
+      games:(cur.games||0)+1,
+      totalScore:(cur.totalScore||0)+myScore,
+      lastPlayed:Date.now()
+    };
+    await fbSet('leaderboard/'+CUR_USER.uid,newEntry);
+  }catch(e){console.warn('Leaderboard update failed',e);}
+}
+
+// ══ CLASSEMENT GLOBAL ══
+let _lbSort='wins'; // 'wins' | 'pct' | 'avg'
+
+async function openLeaderboard(){
+  show('s-leaderboard');
+  document.getElementById('lb-list').innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.85rem;text-align:center;padding:2rem">Chargement…</div>';
+  document.getElementById('lb-my-rank').style.display='none';
+  lbSetSort(_lbSort,false); // update button states without reloading
+  try{
+    const data=await fbGet('leaderboard');
+    renderLeaderboard(data);
+  }catch(e){
+    document.getElementById('lb-list').innerHTML='<div style="color:#ef9a9a;font-size:.8rem;text-align:center;padding:2rem">Erreur de chargement</div>';
+  }
+}
+
+function lbSetSort(sort){
+  _lbSort=sort;
+  ['wins','pct','avg'].forEach(s=>{
+    const btn=document.getElementById('lb-sort-'+s);
+    if(btn)btn.className='bsm'+(s===sort?' gold':'');
+  });
+  // Re-trier si déjà chargé
+  openLeaderboard();
+}
+
+function renderLeaderboard(data){
+  const list=document.getElementById('lb-list');
+  if(!data||!Object.keys(data).length){
+    list.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.85rem;text-align:center;padding:2rem">Aucun joueur pour l\'instant</div>';
+    return;
+  }
+  // Construire tableau
+  const entries=Object.entries(data).map(([uid,d])=>({
+    uid,
+    pseudo:d.pseudo||'?',
+    avatar:d.avatar||'👑',
+    wins:d.wins||0,
+    games:d.games||0,
+    avgScore:d.games>0?Math.round(d.totalScore/d.games):999,
+    pct:d.games>0?Math.round((d.wins/d.games)*100):0
+  })).filter(e=>e.games>0);
+
+  // Trier selon critère
+  if(_lbSort==='wins')entries.sort((a,b)=>b.wins-a.wins||b.pct-a.pct||a.avgScore-b.avgScore);
+  else if(_lbSort==='pct')entries.sort((a,b)=>b.pct-a.pct||b.wins-a.wins||a.avgScore-b.avgScore);
+  else entries.sort((a,b)=>a.avgScore-b.avgScore||b.wins-a.wins);
+
+  const medals=['🥇','🥈','🥉'];
+  list.innerHTML='';
+
+  entries.forEach((e,i)=>{
+    const isMe=CUR_USER&&e.uid===CUR_USER.uid;
+    const row=document.createElement('div');
+    row.className='lb-row'+(i===0?' top1':'')+(isMe?' me':'');
+    row.innerHTML=`
+      <div class="lb-rank">${medals[i]||`${i+1}`}</div>
+      <div class="lb-av">${e.avatar}</div>
+      <div class="lb-name">${e.pseudo}${isMe?' <span style="font-size:.6rem;color:var(--gold);opacity:.7">(toi)</span>':''}</div>
+      <div class="lb-stats">
+        <div class="lb-main">${
+          _lbSort==='avg'
+            ? e.avgScore+' pts moy.'
+            : _lbSort==='pct'
+            ? e.pct+'% victoires'
+            : e.wins+' victoire'+(e.wins!==1?'s':'')
+        }</div>
+        <div class="lb-sub">${e.games} partie${e.games!==1?'s':''} · ${e.pct}% · moy. ${e.avgScore}</div>
+      </div>`;
+    list.appendChild(row);
+  });
+
+  // Ma position si pas dans le top visible
+  if(CUR_USER){
+    const myIdx=entries.findIndex(e=>e.uid===CUR_USER.uid);
+    const myRankEl=document.getElementById('lb-my-rank');
+    if(myIdx>=0){
+      myRankEl.style.display='block';
+      const me=entries[myIdx];
+      myRankEl.textContent=`Ta position : #${myIdx+1} — ${me.wins} victoire${me.wins!==1?'s':''} · ${me.pct}% · moy. ${me.avgScore} pts`;
+    } else {
+      myRankEl.style.display='block';
+      myRankEl.style.color='rgba(255,255,255,.4)';
+      myRankEl.textContent='Tu n\'apparais pas encore dans le classement';
+    }
+  }
 }
 
 function getGameHistory(){
@@ -2751,6 +3192,7 @@ function switchAuthTab(tab){
   document.getElementById('tab-login').classList.toggle('on', tab==='login');
   document.getElementById('tab-register').classList.toggle('on', tab==='register');
   document.getElementById('auth-pseudo-row').style.display=tab==='register'?'block':'none';
+  document.getElementById('auth-referral-row').style.display=tab==='register'?'block':'none';
   document.getElementById('auth-btn').textContent=tab==='login'?'Se connecter':'Créer le compte';
   document.getElementById('auth-err').textContent='';
 }
@@ -2765,6 +3207,7 @@ async function doAuth(){
   if(!email||!pwd){errEl.textContent='Email et mot de passe requis.';return;}
   if(isReg&&!pseudo){errEl.textContent='Choisis un pseudo.';return;}
   if(isReg&&pseudo.length<2){errEl.textContent='Pseudo trop court (min 2 caractères).';return;}
+  const referralInput=document.getElementById('auth-referral')?.value.trim().toUpperCase()||'';
   document.getElementById('auth-btn').textContent='...';
   try{
     let url=isReg?`${AUTH_URL}:signUp?key=${FIREBASE_KEY}`:`${AUTH_URL}:signInWithPassword?key=${FIREBASE_KEY}`;
@@ -2772,12 +3215,14 @@ async function doAuth(){
     const d=await r.json();
     if(d.error){errEl.textContent=translateAuthError(d.error.message);document.getElementById('auth-btn').textContent=isReg?'Créer le compte':'Se connecter';return;}
     if(isReg){
-      // Vérifier que le pseudo est unique
       const taken=await fbGet('pseudos/'+pseudo.toLowerCase());
       if(taken){errEl.textContent='Ce pseudo est déjà pris.';document.getElementById('auth-btn').textContent='Créer le compte';return;}
-      // Sauvegarder le profil
       await fbSet('users/'+d.localId,{pseudo,email,created:Date.now()});
       await fbSet('pseudos/'+pseudo.toLowerCase(),d.localId);
+      // Créer le code de parrainage
+      await setupReferralCode(d.localId,pseudo);
+      // Traiter le parrainage si code fourni
+      if(referralInput)await processReferral(d.localId,referralInput);
     }
     const profile=await fbGet('users/'+d.localId)||{};
     CUR_USER={uid:d.localId,email,pseudo:profile.pseudo||pseudo||email.split('@')[0],idToken:d.idToken,refreshToken:d.refreshToken,tokenExpiry:Date.now()+3600000,fcmToken:null};
@@ -2801,8 +3246,7 @@ function onUserLoggedIn(){
   document.getElementById('lobby-profile').style.display='flex';
   document.getElementById('lobby-pseudo-lbl').textContent=CUR_USER.pseudo;
   const av=document.getElementById('lobby-avatar');
-  av.textContent=CUR_USER.pseudo[0].toUpperCase();
-  av.style.background=pc(CUR_USER.pseudo.charCodeAt(0)%8);
+  if(av)av.textContent=_myAvatar;
   document.getElementById('friends-btn').style.display='flex';
   // Toujours pré-remplir le pseudo (écrase les valeurs par défaut)
   const hostInp=document.getElementById('host-name');
@@ -2819,6 +3263,9 @@ function onUserLoggedIn(){
     window._tokenRefreshInterval=setInterval(ensureFreshToken,1800000);
   loadFriends();
   loadCustomColors();
+  loadAvatar();
+  loadUnlockedThemes();
+  loadReferralData();
   checkWhatsNew();
   // Si l'app a été ouverte via un tap sur une notification d'invitation
   if(window._pendingRoomJoin){
@@ -2836,8 +3283,9 @@ function showProfile(){
   document.getElementById('pm-pseudo').textContent=CUR_USER.pseudo;
   document.getElementById('pm-email').textContent=CUR_USER.email;
   const av=document.getElementById('pm-avatar');
-  av.textContent=CUR_USER.pseudo[0].toUpperCase();
-  av.style.background=pc(CUR_USER.pseudo.charCodeAt(0)%8);
+  av.textContent=_myAvatar;
+  av.style.background='rgba(200,160,0,.15)';
+  av.style.fontSize='1.6rem';
   // Calculer les stats
   const hist=getGameHistory();
   const stats=computeStats(hist);
@@ -2876,6 +3324,8 @@ function showProfile(){
     histEl.innerHTML='<div style="color:var(--text-muted);font-size:.75rem">'+_T('Aucune partie jouée')+'</div>';
   }
   document.getElementById('profile-modal').style.display='flex';
+  renderAvatarPicker();
+  renderReferralInProfile();
   renderColorModeSelector();
 }
 
@@ -3135,15 +3585,151 @@ function setColorMode(){}
 function renderColorModeSelector(){}
 function toggleDaltonien(){openColorModal();}
 function applyDaltonien(){applyCustomColors();}
-function toggleTheme(){
-  const isLight=document.documentElement.getAttribute('data-theme')==='light';
-  const newTheme=isLight?'dark':'light';
-  applyTheme(newTheme);
-  localStorage.setItem('cinqr_theme',newTheme);
+// ══ THÈMES ══
+const THEME_DEFS={
+  dark:  {icon:'🌙', label:'Sombre',    exclusive:false},
+  light: {icon:'☀️',  label:'Clair',     exclusive:false},
+  galaxie:{icon:'🌌', label:'Galaxie',   exclusive:true},
+  nuit:  {icon:'💜', label:'Nuit Pourpre',exclusive:true},
+};
+let _unlockedThemes=['dark','light']; // chargé depuis Firebase
+let _currentTheme='dark';
+
+function _availableThemes(){
+  return Object.keys(THEME_DEFS).filter(t=>_unlockedThemes.includes(t));
 }
+
+function toggleTheme(){
+  const avail=_availableThemes();
+  const idx=avail.indexOf(_currentTheme);
+  const next=avail[(idx+1)%avail.length];
+  applyTheme(next);
+  localStorage.setItem('cinqr_theme',next);
+  if(CUR_USER)fbSet('users/'+CUR_USER.uid+'/settings/theme',next);
+}
+
 function applyTheme(theme){
-  document.documentElement.setAttribute('data-theme',theme==='light'?'light':'');
-  document.getElementById('theme-btn').textContent=theme==='light'?'☀️':'🌙';
+  _currentTheme=theme||'dark';
+  document.documentElement.setAttribute('data-theme',theme==='dark'?'':theme);
+  const btn=document.getElementById('theme-btn');
+  if(btn)btn.textContent=THEME_DEFS[theme]?.icon||'🌙';
+}
+
+async function loadUnlockedThemes(){
+  if(!CUR_USER)return;
+  try{
+    const saved=await fbGet('users/'+CUR_USER.uid+'/unlockedThemes');
+    if(saved&&Array.isArray(saved)){
+      _unlockedThemes=['dark','light',...saved.filter(t=>t!=='dark'&&t!=='light')];
+    }
+    const savedTheme=await fbGet('users/'+CUR_USER.uid+'/settings/theme');
+    if(savedTheme&&_unlockedThemes.includes(savedTheme)){
+      applyTheme(savedTheme);
+      localStorage.setItem('cinqr_theme',savedTheme);
+    }
+  }catch(e){}
+}
+
+async function unlockTheme(uid,theme){
+  try{
+    const cur=await fbGet('users/'+uid+'/unlockedThemes')||[];
+    if(!cur.includes(theme)){
+      cur.push(theme);
+      await fbSet('users/'+uid+'/unlockedThemes',cur);
+      if(uid===CUR_USER?.uid){
+        if(!_unlockedThemes.includes(theme))_unlockedThemes.push(theme);
+        _showToast(`🎉 Thème "${THEME_DEFS[theme].label}" débloqué !`);
+        renderThemesInProfile();
+      }
+    }
+  }catch(e){}
+}
+
+// ══ PARRAINAGE ══
+function generateReferralCode(uid){
+  // Code déterministe basé sur l'UID pour éviter les doublons
+  const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code='';
+  for(let i=0;i<6;i++)code+=chars[uid.charCodeAt(i%uid.length)%chars.length];
+  return code;
+}
+
+async function setupReferralCode(uid, pseudo){
+  // Générer et enregistrer le code de parrainage
+  let code=generateReferralCode(uid);
+  // Vérifier l'unicité
+  const existing=await fbGet('referral_codes/'+code);
+  if(existing&&existing!==uid){
+    // Collision rare — ajouter un suffixe
+    code=code.slice(0,5)+(Math.floor(Math.random()*36)).toString(36).toUpperCase();
+  }
+  await fbSet('referral_codes/'+code,uid);
+  await fbSet('users/'+uid+'/referralCode',code);
+  return code;
+}
+
+async function processReferral(newUid, referralCode){
+  if(!referralCode||referralCode.length!==6)return;
+  try{
+    const referrerUid=await fbGet('referral_codes/'+referralCode.toUpperCase());
+    if(!referrerUid||referrerUid===newUid)return; // code invalide ou auto-parrainage
+    // Récompense pour le nouveau (Nuit Pourpre)
+    await unlockTheme(newUid,'nuit');
+    await fbSet('users/'+newUid+'/referredBy',referrerUid);
+    // Récompense pour le parrain (Galaxie) + compteur
+    const cur=await fbGet('users/'+referrerUid+'/referralCount')||0;
+    await fbSet('users/'+referrerUid+'/referralCount',cur+1);
+    await unlockTheme(referrerUid,'galaxie');
+    _showToast('🎁 Code de parrainage validé ! Thème Nuit Pourpre débloqué !');
+  }catch(e){console.warn('Referral processing failed',e);}
+}
+
+async function loadReferralData(){
+  if(!CUR_USER)return;
+  try{
+    let code=await fbGet('users/'+CUR_USER.uid+'/referralCode');
+    if(!code){code=await setupReferralCode(CUR_USER.uid,CUR_USER.pseudo);}
+    CUR_USER.referralCode=code;
+  }catch(e){}
+}
+
+function copyReferralCode(){
+  const code=CUR_USER?.referralCode;
+  if(!code)return;
+  const text=`Rejoins-moi sur Cinq Couronnes ! Code : ${code}`;
+  if(navigator.clipboard)navigator.clipboard.writeText(text);
+  const btn=document.getElementById('pm-ref-copy');
+  if(btn){btn.textContent='✅ Copié !';setTimeout(()=>btn.textContent='Copier',2000);}
+}
+
+function renderReferralInProfile(){
+  if(!CUR_USER)return;
+  const codeEl=document.getElementById('pm-ref-code');
+  if(codeEl)codeEl.textContent=CUR_USER.referralCode||'…';
+  // Compte de filleuls
+  fbGet('users/'+CUR_USER.uid+'/referralCount').then(n=>{
+    const el=document.getElementById('pm-ref-count');
+    if(el)el.textContent=(n||0)+' ami'+(n>1?'s':'')+ ' parrainé'+(n>1?'s':'');
+  });
+  renderThemesInProfile();
+}
+
+function renderThemesInProfile(){
+  const sec=document.getElementById('pm-themes-section');
+  const container=document.getElementById('pm-themes');
+  if(!sec||!container)return;
+  const exclusive=_unlockedThemes.filter(t=>THEME_DEFS[t]?.exclusive);
+  if(!exclusive.length){sec.style.display='none';return;}
+  sec.style.display='block';
+  container.innerHTML='';
+  exclusive.forEach(t=>{
+    const def=THEME_DEFS[t];
+    const btn=document.createElement('button');
+    btn.style.cssText='padding:.3rem .7rem;border:2px solid rgba(200,160,0,.4);border-radius:8px;background:'+(t===_currentTheme?'rgba(200,160,0,.2)':'rgba(255,255,255,.05)')+';color:var(--text);font-size:.75rem;cursor:pointer;font-family:Cinzel,serif;transition:.15s';
+    btn.textContent=def.icon+' '+def.label+(t===_currentTheme?' ✓':'');
+    btn.onclick=()=>{applyTheme(t);localStorage.setItem('cinqr_theme',t);if(CUR_USER)fbSet('users/'+CUR_USER.uid+'/settings/theme',t);renderThemesInProfile();};
+    container.appendChild(btn);
+  });
 }
 
 // ══ LANGUE ══
@@ -3493,7 +4079,9 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('ov').classList.remove('on');
   document.getElementById('popup').classList.remove('on');
   // Thème et langue
-  applyTheme(localStorage.getItem('cinqr_theme')||'dark');
+  const savedTheme=localStorage.getItem('cinqr_theme')||'dark';
+  if(THEME_DEFS[savedTheme])applyTheme(savedTheme);
+  else applyTheme('dark');
   _lang=localStorage.getItem('cinqr_lang')||(navigator.language&&!navigator.language.startsWith('fr')?'en':'fr');
   applyLang();
   applyCustomColors();
