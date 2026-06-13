@@ -1319,12 +1319,15 @@ async function _cleanOldRooms(){
   try{
     const rooms=await fbGet('cinqrois_rooms');
     if(!rooms)return;
-    const limit=Date.now()-7200000; // 2h
+    const now=Date.now();
+    const limit=now-7200000; // 2h
     for(const [code,room] of Object.entries(rooms)){
       if(code===NET.roomCode)continue;
-      if(room&&room.created&&room.created<limit){
-        fbDel('cinqrois_rooms/'+code);
-      }
+      const created=room&&room.created||0;
+      const lastSeen=room&&room.lastSeen||created;
+      const corrupted=created>now; // timestamp dans le futur → corrompu
+      const stale=lastSeen<limit;  // hôte absent depuis >2h
+      if(corrupted||stale)fbDel('cinqrois_rooms/'+code);
     }
   }catch(e){}
 }
@@ -3267,6 +3270,7 @@ function onUserLoggedIn(){
   loadUnlockedThemes();
   loadReferralData();
   checkWhatsNew();
+  _cleanOldRooms(); // nettoyage des salles fantômes au login
   // Si l'app a été ouverte via un tap sur une notification d'invitation
   if(window._pendingRoomJoin){
     const pending=window._pendingRoomJoin;
