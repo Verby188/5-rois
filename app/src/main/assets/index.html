@@ -1127,7 +1127,7 @@ let _soundEnabled = localStorage.getItem('cinqr_sound') !== '0';
 const EMOJI_DURATION = 3000; // ms d'affichage
 
 // ══ QUOI DE NEUF ══
-const APP_VERSION='1.7';
+const APP_VERSION='1.8';
 const WN_FEATURES=[
   {v:'1.0',icon:'🤖',bg:'#311b92,#4527a0',title:'Jeu contre l\'IA',img:'img/wn/ia.png',
    desc:'Jouez seul contre 1 à 7 adversaires IA. Depuis le lobby appuyez sur <b>Partie locale</b>, choisissez le nombre de joueurs et basculez chaque slot en <b>Humain</b> ou <b>IA</b>.'},
@@ -1149,6 +1149,20 @@ const WN_FEATURES=[
    desc:'Recevez une notification même si l\'app est fermée quand un ami vous invite à jouer. Autorisez les notifications lors de la première demande.'},
   {v:'1.6',icon:'🎨',bg:'#bf360c,#e64a19',title:'Couleurs des cartes',img:'img/wn/couleurs.png',
    desc:'Personnalisez la couleur de chaque enseigne et des cartes atouts selon vos préférences (daltonisme, confort visuel…). Appuyez sur <b>🎨</b> en bas à droite. Les couleurs sont sauvegardées sur votre compte.'},
+  {v:'1.8',icon:'😊',bg:'#1b5e20,#2e7d32',title:'Réactions emoji',img:'img/wn/emoji.png',
+   desc:'Envoyez une réaction emoji pendant la partie ! Appuyez sur <b>😊</b> dans la barre d\'action pour choisir parmi 8 emojis. Les réactions apparaissent sous le pseudo de chaque joueur.'},
+  {v:'1.8',icon:'🖼️',bg:'#4a148c,#6a1b9a',title:'Avatars',img:'img/wn/avatar.png',
+   desc:'Choisissez votre avatar parmi 20 emojis depuis votre <b>profil</b>. Il s\'affiche dans le lobby, en partie et dans le classement. Sauvegardé sur votre compte.'},
+  {v:'1.8',icon:'🔄',bg:'#0d47a1,#1565c0',title:'Revanche rapide',img:'img/wn/revanche.png',
+   desc:'En fin de partie, l\'hôte peut lancer une <b>revanche</b> sans repasser par le lobby. Les mêmes joueurs repartent avec les scores remis à zéro.'},
+  {v:'1.8',icon:'🏆',bg:'#bf360c,#e64a19',title:'Classement global',img:'img/wn/classement.png',
+   desc:'Comparez-vous aux autres joueurs dans le <b>classement mondial</b> accessible depuis le lobby. Triez par victoires, % de victoires ou score moyen.'},
+  {v:'1.8',icon:'👁️',bg:'#006064,#00838f',title:'Mode spectateur',img:'img/wn/spectateur.png',
+   desc:'Rejoignez une partie en cours comme <b>spectateur</b> pour voir toutes les mains. Entrez le code de la salle et choisissez "Regarder la partie".'},
+  {v:'1.8',icon:'🎁',bg:'#311b92,#4527a0',title:'Parrainage & thèmes exclusifs',img:'img/wn/parrainage.png',
+   desc:'Parrainez un ami avec votre code depuis votre <b>profil</b>. Débloquez les thèmes exclusifs <b>🌌 Galaxie</b> et <b>💜 Nuit Pourpre</b> en invitant des amis.'},
+  {v:'1.8',icon:'🔊',bg:'#e65100,#f57c00',title:'Sons & vibrations',img:'img/wn/sons.png',
+   desc:'L\'app joue des sons à chaque action de jeu. Activez ou désactivez les sons via le bouton <b>🔊</b> en bas à droite. Votre préférence est mémorisée.'},
 ];
 const SORD={};SUITS.forEach((s,i)=>SORD[s]=i);
 const VALS=[3,4,5,6,7,8,9,10,11,12,13];
