@@ -17,17 +17,7 @@ import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
-import com.google.android.gms.ads.FullScreenContentCallback
-import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.MobileAds
-import com.google.android.gms.ads.interstitial.InterstitialAd
-import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
-import com.google.android.ump.ConsentDebugSettings
-import com.google.android.ump.ConsentForm
-import com.google.android.ump.ConsentInformation
-import com.google.android.ump.ConsentRequestParameters
-import com.google.android.ump.FormError
-import com.google.android.ump.UserMessagingPlatform
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.InstallStateUpdatedListener
@@ -35,6 +25,7 @@ import com.google.android.play.core.install.model.AppUpdateType
 import com.google.android.play.core.install.model.InstallStatus
 import com.google.android.play.core.install.model.UpdateAvailability
 import com.google.firebase.messaging.FirebaseMessaging
+import com.google.android.play.core.review.ReviewManagerFactory
 
 /** Interface exposée au JS pour déclencher le redémarrage après mise à jour. */
 class AndroidBridge(private val activity: MainActivity) {
@@ -44,10 +35,11 @@ class AndroidBridge(private val activity: MainActivity) {
             activity.appUpdateManager.completeUpdate()
         }
     }
+
     @android.webkit.JavascriptInterface
-    fun showInterstitial() {
+    fun requestReview() {
         activity.runOnUiThread {
-            activity.showInterstitialAd()
+            activity.showInAppReview()
         }
     }
 }
@@ -58,9 +50,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var adView: AdView
     private var pendingCode: String? = null
     private var pendingNotifData: String? = null
-    private var interstitialAd: InterstitialAd? = null
-    // ⚠️ Remplace par l'ID de ton bloc interstitiel AdMob
-    private val INTERSTITIAL_AD_UNIT_ID = "ca-app-pub-6145497382360748/1750052165"
 
     // ── In-App Updates ──
     val appUpdateManager by lazy { AppUpdateManagerFactory.create(this) }
@@ -94,20 +83,7 @@ class MainActivity : AppCompatActivity() {
             or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         )
 
-        // ── Consentement RGPD (UMP) → puis initialisation AdMob ──
-        val consentParams = ConsentRequestParameters.Builder().build()
-        val consentInfo = UserMessagingPlatform.getConsentInformation(this)
-        consentInfo.requestConsentInfoUpdate(
-            this, consentParams,
-            {
-                UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) {
-                    initAds()
-                }
-            },
-            {
-                initAds()
-            }
-        )
+        MobileAds.initialize(this)
 
         // ── Extraire le code d'invitation AVANT de charger la WebView (pattern U9) ──
         val notifType = intent?.getStringExtra("type")
@@ -226,50 +202,10 @@ class MainActivity : AppCompatActivity() {
             "file:///android_asset/index.html"
         }
         webView.loadUrl(startUrl)
-        // adView.loadAd sera appelé dans initAds() après le consentement
+        adView.loadAd(AdRequest.Builder().build())
 
         handleIntent(intent)
         checkForUpdate()
-    }
-
-    // ── Initialisation AdMob après consentement ──
-    private fun initAds() {
-        if (UserMessagingPlatform.getConsentInformation(this).canRequestAds()) {
-            MobileAds.initialize(this) { loadInterstitialAd() }
-            adView.loadAd(AdRequest.Builder().build())
-        }
-    }
-
-    // ── Interstitiel fin de partie ──
-    private fun loadInterstitialAd() {
-        InterstitialAd.load(
-            this, INTERSTITIAL_AD_UNIT_ID, AdRequest.Builder().build(),
-            object : InterstitialAdLoadCallback() {
-                override fun onAdLoaded(ad: InterstitialAd) {
-                    interstitialAd = ad
-                    ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-                        override fun onAdDismissedFullScreenContent() {
-                            interstitialAd = null
-                            loadInterstitialAd() // Précharger la suivante
-                        }
-                        override fun onAdFailedToShowFullScreenContent(error: com.google.android.gms.ads.AdError) {
-                            interstitialAd = null
-                            loadInterstitialAd()
-                        }
-                    }
-                }
-                override fun onAdFailedToLoad(error: LoadAdError) {
-                    interstitialAd = null
-                }
-            }
-        )
-    }
-
-    fun showInterstitialAd() {
-        if (interstitialAd != null) {
-            interstitialAd?.show(this)
-        }
-        // Si pas encore chargée, on ignore — le classement s'affiche quand même
     }
 
     // ── In-App Updates ──
@@ -381,6 +317,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     // Appelé par le service FCM quand notification reçue en foreground
+    fun showInAppReview() {
+        val reviewManager = ReviewManagerFactory.create(this)
+        reviewManager.requestReviewFlow().addOnCompleteListener { request ->
+            if (request.isSuccessful) {
+                reviewManager.launchReviewFlow(this, request.result)
+            }
+        }
+    }
+
     fun onMessageReceived(data: Map<String, String>) {
         val json = data.entries.joinToString(",") { "\"${it.key}\":\"${it.value}\"" }
         injectNotification("{$json}")
