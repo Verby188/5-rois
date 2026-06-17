@@ -2790,6 +2790,10 @@ function saveGameHistory(sorted){
     hist.unshift({date:Date.now(),players:sorted.map(p=>({name:p.name,score:p.totalScore}))});
     if(hist.length>10)hist.splice(10);
     localStorage.setItem(key,JSON.stringify(hist));
+    // Demander un avis après la 3ème partie complète
+    if(hist.length===3&&window.Android&&typeof window.Android.requestReview==='function'){
+      setTimeout(()=>window.Android.requestReview(),2000);
+    }
   }catch(e){}
   // Mise à jour classement global Firebase
   updateLeaderboard(sorted);
