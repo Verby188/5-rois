@@ -785,7 +785,8 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
     <input class="auth-inp" id="auth-pwd" placeholder="Mot de passe" type="password">
     <div class="auth-err" id="auth-err"></div>
     <button class="gbtn" id="auth-btn" onclick="doAuth()">Se connecter</button>
-    <div class="auth-skip" onclick="skipAuth()">Continuer sans compte</div>
+    <div class="auth-skip" id="forgot-pwd-link" onclick="doForgotPassword()">Mot de passe oublié ?</div>
+    <div class="auth-skip" id="auth-skip-btn" onclick="skipAuth()">Continuer sans compte</div>
   </div>
 </div>
 
@@ -2791,7 +2792,8 @@ function saveGameHistory(sorted){
     if(hist.length>10)hist.splice(10);
     localStorage.setItem(key,JSON.stringify(hist));
     // Demander un avis après la 3ème partie complète
-    if(hist.length===3&&window.Android&&typeof window.Android.requestReview==='function'){
+    if(hist.length>=3&&!localStorage.getItem('cinqr_review_asked')&&window.Android&&typeof window.Android.requestReview==='function'){
+      localStorage.setItem('cinqr_review_asked','1');
       setTimeout(()=>window.Android.requestReview(),2000);
     }
   }catch(e){}
@@ -3216,6 +3218,36 @@ function switchAuthTab(tab){
   document.getElementById('auth-referral-row').style.display=tab==='register'?'block':'none';
   document.getElementById('auth-btn').textContent=tab==='login'?'Se connecter':'Créer le compte';
   document.getElementById('auth-err').textContent='';
+  const fp=document.getElementById('forgot-pwd-link');
+  if(fp)fp.style.display=tab==='login'?'block':'none';
+}
+
+async function doForgotPassword(){
+  const email=document.getElementById('auth-email').value.trim();
+  const errEl=document.getElementById('auth-err');
+  if(!email){errEl.style.color='#ef5350';errEl.textContent='Entre ton email ci-dessus d\'abord.';return;}
+  const link=document.getElementById('forgot-pwd-link');
+  const originalText=link.textContent;
+  link.textContent='Envoi en cours...';
+  try{
+    const r=await fetch(`${AUTH_URL}:sendOobCode?key=${FIREBASE_KEY}`,{
+      method:'POST',
+      body:JSON.stringify({requestType:'PASSWORD_RESET',email}),
+      headers:{'Content-Type':'application/json'}
+    });
+    const d=await r.json();
+    if(d.error){
+      errEl.style.color='#ef5350';
+      errEl.textContent=d.error.message==='EMAIL_NOT_FOUND'?'Aucun compte avec cet email.':'Erreur: '+d.error.message;
+    }else{
+      errEl.style.color='#66bb6a';
+      errEl.textContent='Email envoyé ! Vérifie ta boîte de réception.';
+    }
+  }catch(e){
+    errEl.style.color='#ef5350';
+    errEl.textContent='Erreur réseau. Réessaie.';
+  }
+  link.textContent=originalText;
 }
 
 async function doAuth(){
@@ -3813,7 +3845,7 @@ function applyLang(){
   if(tReg)tReg.textContent=_T('Inscription');
   const authBtn=document.getElementById('auth-btn');
   if(authBtn)authBtn.textContent=tLogin&&tLogin.classList.contains('on')?_T('Se connecter'):_T('Créer le compte');
-  const authSkip=document.querySelector('.auth-skip');
+  const authSkip=document.getElementById('auth-skip-btn');
   if(authSkip)authSkip.textContent=_T('Continuer sans compte');
   // Network screen
   const hostNameInp=document.getElementById('host-name');
