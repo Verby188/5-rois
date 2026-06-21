@@ -1,0 +1,104 @@
+name: Build iOS App
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'ios-app/**'
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install npm dependencies
+        working-directory: ios-app
+        run: npm install
+
+      - name: Sync web assets
+        working-directory: ios-app
+        run: npx cap sync ios
+
+      # ── Configuration de la signature ──
+      - name: Installer le certificat et le profil de provisionnement
+        env:
+          CERT_BASE64: ${{ secrets.IOS_CERTIFICATE_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_CERTIFICATE_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          KEYCHAIN_PATH=$RUNNER_TEMP/build.keychain
+          KEYCHAIN_PASSWORD=$(uuidgen)
+
+          # Décoder le certificat et le profil
+          echo -n "$CERT_BASE64" | base64 --decode -o $RUNNER_TEMP/certificate.p12
+          echo -n "$PROFILE_BASE64" | base64 --decode -o $RUNNER_TEMP/profile.mobileprovision
+
+          # Créer un trousseau temporaire
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # Importer le certificat
+          security import $RUNNER_TEMP/certificate.p12 -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+          # Installer le profil de provisionnement
+          mkdir -p ~/Library/MobileDevice/"Provisioning Profiles"
+          cp $RUNNER_TEMP/profile.mobileprovision ~/Library/MobileDevice/"Provisioning Profiles"/
+
+      - name: Créer ExportOptions.plist
+        working-directory: ios-app/ios/App
+        run: |
+          cat > ExportOptions.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>UJKT7LJFD3</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.verby188.cinqrois</key>
+                  <string>CinqRois_AppStore</string>
+              </dict>
+          </dict>
+          </plist>
+          EOF
+
+      - name: Archiver l'application
+        working-directory: ios-app/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            -allowProvisioningUpdates \
+            CODE_SIGN_STYLE=Manual \
+            PROVISIONING_PROFILE_SPECIFIER=CinqRois_AppStore \
+            DEVELOPMENT_TEAM=UJKT7LJFD3 \
+            archive
+
+      - name: Exporter l'IPA
+        working-directory: ios-app/ios/App
+        run: |
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportPath build/ipa \
+            -exportOptionsPlist ExportOptions.plist
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: CinqCouronnes-ipa
+          path: ios-app/ios/App/build/ipa/*.ipa
