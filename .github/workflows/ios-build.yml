@@ -88,6 +88,7 @@ jobs:
             CODE_SIGN_IDENTITY="Apple Distribution" \
             PROVISIONING_PROFILE_SPECIFIER=CinqRois_AppStore \
             DEVELOPMENT_TEAM=UJKT7LJFD3 \
+            CURRENT_PROJECT_VERSION=${{ github.run_number }} \
             archive
 
       - name: Exporter l'IPA
@@ -151,7 +152,7 @@ jobs:
 
       - name: Zipper le .app pour Appetize
         run: |
-          APP_PATH=$(find ios-app/ios/App/build -name "App.app" -path "*iphonesimulator" | head -n 1)
+          APP_PATH=$(find ios-app/ios/App/build -name "App.app" -path "*iphonesimulator*" | head -n 1)
           cd "$(dirname "$APP_PATH")"
           zip -r -y $GITHUB_WORKSPACE/CinqCouronnes-simulator.zip App.app
 
