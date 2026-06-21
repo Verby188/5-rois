@@ -19,16 +19,9 @@ jobs:
         run: npm install
       - working-directory: ios-app
         run: npx cap sync ios
-      - uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-          bundler-cache: true
-      - run: gem install cocoapods
-      - working-directory: ios-app/ios/App
-        run: pod install
       - working-directory: ios-app/ios/App
         run: |
-          xcodebuild -workspace App.xcworkspace \
+          xcodebuild -project App.xcodeproj \
             -scheme App -configuration Debug \
             -sdk iphonesimulator \
             -derivedDataPath build \
