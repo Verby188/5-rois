@@ -120,3 +120,43 @@ jobs:
             -t ios \
             --apiKey "$KEY_ID" \
             --apiIssuer "$ISSUER_ID"
+
+  build-ios-simulator:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install npm dependencies
+        working-directory: ios-app
+        run: npm install
+
+      - name: Sync web assets
+        working-directory: ios-app
+        run: npx cap sync ios
+
+      - name: Build pour simulateur (Appetize.io)
+        working-directory: ios-app/ios/App
+        run: |
+          xcodebuild -project App.xcodeproj \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Zipper le .app pour Appetize
+        run: |
+          APP_PATH=$(find ios-app/ios/App/build -name "App.app" -path "*iphonesimulator" | head -n 1)
+          cd "$(dirname "$APP_PATH")"
+          zip -r -y $GITHUB_WORKSPACE/CinqCouronnes-simulator.zip App.app
+
+      - name: Upload build simulateur
+        uses: actions/upload-artifact@v4
+        with:
+          name: CinqCouronnes-simulator
+          path: CinqCouronnes-simulator.zip
