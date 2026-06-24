@@ -14,7 +14,6 @@ import android.view.WindowManager
 import android.webkit.*
 import android.widget.FrameLayout
 import android.widget.LinearLayout
-import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -356,7 +355,6 @@ class MainActivity : AppCompatActivity() {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     interstitialAd = ad
                     Log.d("INTER", "chargé OK")
-                    Toast.makeText(this@MainActivity, "Interstitiel chargé", Toast.LENGTH_SHORT).show()
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdDismissedFullScreenContent() {
                             // Pub fermée : on précharge la suivante pour la prochaine partie.
@@ -374,11 +372,6 @@ class MainActivity : AppCompatActivity() {
                     // Pas de remplissage / erreur : on retentera au prochain appel.
                     interstitialAd = null
                     Log.e("INTER", "échec chargement : ${error.code} ${error.message}")
-                    Toast.makeText(
-                        this@MainActivity,
-                        "Échec chargement interstitiel : ${error.code} ${error.message}",
-                        Toast.LENGTH_LONG
-                    ).show()
                 }
             }
         )
@@ -392,7 +385,6 @@ class MainActivity : AppCompatActivity() {
             ad.show(this)
         } else {
             // Pas encore prêt : on relance un chargement pour la prochaine fin de partie.
-            Toast.makeText(this, "Interstitiel pas encore prêt", Toast.LENGTH_SHORT).show()
             loadInterstitial()
         }
     }
