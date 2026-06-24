@@ -18,6 +18,11 @@ import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
 import com.google.android.gms.ads.AdView
 import com.google.android.gms.ads.MobileAds
+import com.google.android.gms.ads.AdError
+import com.google.android.gms.ads.FullScreenContentCallback
+import com.google.android.gms.ads.LoadAdError
+import com.google.android.gms.ads.interstitial.InterstitialAd
+import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.InstallStateUpdatedListener
@@ -42,12 +47,23 @@ class AndroidBridge(private val activity: MainActivity) {
             activity.showInAppReview()
         }
     }
+
+    @android.webkit.JavascriptInterface
+    fun showInterstitial() {
+        activity.runOnUiThread {
+            activity.showInterstitialAd()
+        }
+    }
 }
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var adView: AdView
+    private var interstitialAd: InterstitialAd? = null
+    // ID de l'unite "Interstitiel fin de partie" (console AdMob).
+    // ID de TEST Google si besoin de revalider le cablage : ca-app-pub-3940256099942544/1033173712
+    private val interstitialAdUnitId = "ca-app-pub-6145497382360748/1750052165"
     private var pendingCode: String? = null
     private var pendingNotifData: String? = null
 
@@ -84,6 +100,7 @@ class MainActivity : AppCompatActivity() {
         )
 
         MobileAds.initialize(this)
+        loadInterstitial()   // precharger le premier interstitiel de fin de partie
 
         // ── Extraire le code d'invitation AVANT de charger la WebView (pattern U9) ──
         val notifType = intent?.getStringExtra("type")
@@ -323,6 +340,46 @@ class MainActivity : AppCompatActivity() {
             if (request.isSuccessful) {
                 reviewManager.launchReviewFlow(this, request.result)
             }
+        }
+    }
+
+    // ── Interstitiel de fin de partie ──
+    fun loadInterstitial() {
+        InterstitialAd.load(
+            this,
+            interstitialAdUnitId,
+            AdRequest.Builder().build(),
+            object : InterstitialAdLoadCallback() {
+                override fun onAdLoaded(ad: InterstitialAd) {
+                    interstitialAd = ad
+                    ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                        override fun onAdDismissedFullScreenContent() {
+                            // Pub fermée : on précharge la suivante pour la prochaine partie.
+                            interstitialAd = null
+                            loadInterstitial()
+                        }
+                        override fun onAdFailedToShowFullScreenContent(e: AdError) {
+                            interstitialAd = null
+                            loadInterstitial()
+                        }
+                    }
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    // Pas de remplissage / erreur : on retentera au prochain appel.
+                    interstitialAd = null
+                }
+            }
+        )
+    }
+
+    /** Appelé depuis le JS (saveGameHistory) à la fin d'une partie. */
+    fun showInterstitialAd() {
+        val ad = interstitialAd
+        if (ad != null) {
+            ad.show(this)
+        } else {
+            // Pas encore prêt : on relance un chargement pour la prochaine fin de partie.
+            loadInterstitial()
         }
     }
 
