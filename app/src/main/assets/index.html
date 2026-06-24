@@ -2808,9 +2808,15 @@ function saveGameHistory(sorted){
     if(hist.length>10)hist.splice(10);
     localStorage.setItem(key,JSON.stringify(hist));
     // Demander un avis après la 3ème partie complète
+    let reviewJustAsked=false;
     if(hist.length>=3&&!localStorage.getItem('cinqr_review_asked')&&window.Android&&typeof window.Android.requestReview==='function'){
       localStorage.setItem('cinqr_review_asked','1');
+      reviewJustAsked=true;
       setTimeout(()=>window.Android.requestReview(),2000);
+    }
+    // Interstitiel de fin de partie (jamais le même tour que la demande d'avis)
+    if(!reviewJustAsked&&window.Android&&typeof window.Android.showInterstitial==='function'){
+      setTimeout(()=>window.Android.showInterstitial(),600);
     }
   }catch(e){}
   // Mise à jour classement global Firebase
