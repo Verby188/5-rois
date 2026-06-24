@@ -8,11 +8,13 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.DisplayMetrics
+import android.util.Log
 import android.view.View
 import android.view.WindowManager
 import android.webkit.*
 import android.widget.FrameLayout
 import android.widget.LinearLayout
+import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.google.android.gms.ads.AdRequest
 import com.google.android.gms.ads.AdSize
@@ -345,6 +347,7 @@ class MainActivity : AppCompatActivity() {
 
     // ── Interstitiel de fin de partie ──
     fun loadInterstitial() {
+        Log.d("INTER", "loadInterstitial() appelé")
         InterstitialAd.load(
             this,
             interstitialAdUnitId,
@@ -352,6 +355,8 @@ class MainActivity : AppCompatActivity() {
             object : InterstitialAdLoadCallback() {
                 override fun onAdLoaded(ad: InterstitialAd) {
                     interstitialAd = ad
+                    Log.d("INTER", "chargé OK")
+                    Toast.makeText(this@MainActivity, "Interstitiel chargé", Toast.LENGTH_SHORT).show()
                     ad.fullScreenContentCallback = object : FullScreenContentCallback() {
                         override fun onAdDismissedFullScreenContent() {
                             // Pub fermée : on précharge la suivante pour la prochaine partie.
@@ -359,6 +364,7 @@ class MainActivity : AppCompatActivity() {
                             loadInterstitial()
                         }
                         override fun onAdFailedToShowFullScreenContent(e: AdError) {
+                            Log.e("INTER", "échec affichage : ${e.code} ${e.message}")
                             interstitialAd = null
                             loadInterstitial()
                         }
@@ -367,6 +373,12 @@ class MainActivity : AppCompatActivity() {
                 override fun onAdFailedToLoad(error: LoadAdError) {
                     // Pas de remplissage / erreur : on retentera au prochain appel.
                     interstitialAd = null
+                    Log.e("INTER", "échec chargement : ${error.code} ${error.message}")
+                    Toast.makeText(
+                        this@MainActivity,
+                        "Échec chargement interstitiel : ${error.code} ${error.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
                 }
             }
         )
@@ -374,11 +386,13 @@ class MainActivity : AppCompatActivity() {
 
     /** Appelé depuis le JS (saveGameHistory) à la fin d'une partie. */
     fun showInterstitialAd() {
+        Log.d("INTER", "showInterstitialAd() appelé — pub prête ? ${interstitialAd != null}")
         val ad = interstitialAd
         if (ad != null) {
             ad.show(this)
         } else {
             // Pas encore prêt : on relance un chargement pour la prochaine fin de partie.
+            Toast.makeText(this, "Interstitiel pas encore prêt", Toast.LENGTH_SHORT).show()
             loadInterstitial()
         }
     }
