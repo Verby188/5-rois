@@ -24,6 +24,9 @@ import com.google.android.gms.ads.FullScreenContentCallback
 import com.google.android.gms.ads.LoadAdError
 import com.google.android.gms.ads.interstitial.InterstitialAd
 import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
+import com.google.android.gms.ads.rewarded.RewardedAd
+import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
+import com.google.android.gms.ads.OnUserEarnedRewardListener
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.InstallStateUpdatedListener
@@ -55,6 +58,13 @@ class AndroidBridge(private val activity: MainActivity) {
             activity.showInterstitialAd()
         }
     }
+
+    @android.webkit.JavascriptInterface
+    fun showRewarded() {
+        activity.runOnUiThread {
+            activity.showRewardedAd()
+        }
+    }
 }
 
 class MainActivity : AppCompatActivity() {
@@ -65,6 +75,12 @@ class MainActivity : AppCompatActivity() {
     // ID de l'unite "Interstitiel fin de partie" (console AdMob).
     // ID de TEST Google si besoin de revalider le cablage : ca-app-pub-3940256099942544/1033173712
     private val interstitialAdUnitId = "ca-app-pub-6145497382360748/1750052165"
+    private var rewardedAd: RewardedAd? = null
+    // Unite "Annuler un coup" (console AdMob) : ca-app-pub-6145497382360748/4561447136
+    // On valide d'abord le cablage avec l'ID de TEST Google ci-dessous, puis on bascule
+    // sur la ligne LIVE (commenter TEST / decommenter LIVE) une fois le flux confirme.
+    private val rewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"          // TEST
+    // private val rewardedAdUnitId = "ca-app-pub-6145497382360748/4561447136"       // LIVE
     private var pendingCode: String? = null
     private var pendingNotifData: String? = null
 
@@ -102,6 +118,7 @@ class MainActivity : AppCompatActivity() {
 
         MobileAds.initialize(this)
         loadInterstitial()   // precharger le premier interstitiel de fin de partie
+        loadRewarded()       // precharger la pub recompensee (annulation de coup)
 
         // ── Extraire le code d'invitation AVANT de charger la WebView (pattern U9) ──
         val notifType = intent?.getStringExtra("type")
@@ -386,6 +403,68 @@ class MainActivity : AppCompatActivity() {
         } else {
             // Pas encore prêt : on relance un chargement pour la prochaine fin de partie.
             loadInterstitial()
+        }
+    }
+
+    // ── Pub récompensée : annulation de coup ──
+    fun loadRewarded() {
+        Log.d("REWARD", "loadRewarded() appelé")
+        RewardedAd.load(
+            this,
+            rewardedAdUnitId,
+            AdRequest.Builder().build(),
+            object : RewardedAdLoadCallback() {
+                override fun onAdLoaded(ad: RewardedAd) {
+                    rewardedAd = ad
+                    Log.d("REWARD", "chargé OK")
+                    ad.fullScreenContentCallback = object : FullScreenContentCallback() {
+                        override fun onAdDismissedFullScreenContent() {
+                            // Pub fermée : on précharge la suivante.
+                            rewardedAd = null
+                            loadRewarded()
+                        }
+                        override fun onAdFailedToShowFullScreenContent(e: AdError) {
+                            Log.e("REWARD", "échec affichage : ${e.code} ${e.message}")
+                            rewardedAd = null
+                            loadRewarded()
+                            notifyRewardFailed()
+                        }
+                    }
+                }
+                override fun onAdFailedToLoad(error: LoadAdError) {
+                    // Pas de remplissage / erreur : on retentera au prochain appel.
+                    rewardedAd = null
+                    Log.e("REWARD", "échec chargement : ${error.code} ${error.message}")
+                }
+            }
+        )
+    }
+
+    /** Appelé depuis le JS (onUndoClick) quand les annulations gratuites sont épuisées. */
+    fun showRewardedAd() {
+        Log.d("REWARD", "showRewardedAd() — pub prête ? ${rewardedAd != null}")
+        val ad = rewardedAd
+        if (ad != null) {
+            ad.show(this) { _ ->
+                // L'utilisateur a regardé la pub → on autorise l'annulation côté JS.
+                webView.post {
+                    webView.evaluateJavascript(
+                        "if(typeof onRewardEarned==='function')onRewardEarned();", null
+                    )
+                }
+            }
+        } else {
+            // Pas encore prête (remplissage) : on relance un chargement et on prévient le JS.
+            loadRewarded()
+            notifyRewardFailed()
+        }
+    }
+
+    private fun notifyRewardFailed() {
+        webView.post {
+            webView.evaluateJavascript(
+                "if(typeof onRewardFailed==='function')onRewardFailed();", null
+            )
         }
     }
 
