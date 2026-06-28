@@ -27,6 +27,10 @@ import com.google.android.gms.ads.interstitial.InterstitialAdLoadCallback
 import com.google.android.gms.ads.rewarded.RewardedAd
 import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
 import com.google.android.gms.ads.OnUserEarnedRewardListener
+import com.google.android.ump.ConsentInformation
+import com.google.android.ump.ConsentRequestParameters
+import com.google.android.ump.UserMessagingPlatform
+import java.util.concurrent.atomic.AtomicBoolean
 import com.google.android.play.core.appupdate.AppUpdateManagerFactory
 import com.google.android.play.core.appupdate.AppUpdateOptions
 import com.google.android.play.core.install.InstallStateUpdatedListener
@@ -71,6 +75,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var webView: WebView
     private lateinit var adView: AdView
+    private lateinit var consentInformation: ConsentInformation
+    private val isMobileAdsInitializeCalled = AtomicBoolean(false)
     private var interstitialAd: InterstitialAd? = null
     // ID de l'unite "Interstitiel fin de partie" (console AdMob).
     // ID de TEST Google si besoin de revalider le cablage : ca-app-pub-3940256099942544/1033173712
@@ -116,9 +122,8 @@ class MainActivity : AppCompatActivity() {
             or View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
         )
 
-        MobileAds.initialize(this)
-        loadInterstitial()   // precharger le premier interstitiel de fin de partie
-        loadRewarded()       // precharger la pub recompensee (annulation de coup)
+        // L'init du SDK Mobile Ads + le préchargement des pubs sont désormais
+        // déclenchés APRÈS le recueil du consentement RGPD (voir setupConsentAndAds()).
 
         // ── Extraire le code d'invitation AVANT de charger la WebView (pattern U9) ──
         val notifType = intent?.getStringExtra("type")
@@ -237,10 +242,77 @@ class MainActivity : AppCompatActivity() {
             "file:///android_asset/index.html"
         }
         webView.loadUrl(startUrl)
-        adView.loadAd(AdRequest.Builder().build())
 
         handleIntent(intent)
         checkForUpdate()
+
+        // ── Consentement RGPD (UMP) → puis init pubs/médiation ──
+        setupConsentAndAds()
+    }
+
+    // ── Consentement RGPD (UMP) + initialisation des pubs ──
+    // Recueille le consentement AVANT d'initialiser le SDK Mobile Ads.
+    // Sans ça, les réseaux de médiation (Meta, AppLovin, Pangle…) ne diffusent pas en UE.
+    private fun setupConsentAndAds() {
+        val params = ConsentRequestParameters.Builder().build()
+        // ── Pour TESTER le formulaire en debug, dé-commenter le bloc ci-dessous
+        //    (remplace TEST_DEVICE_HASH par le hash affiché dans le logcat au 1er lancement) :
+        // val debugSettings = com.google.android.ump.ConsentDebugSettings.Builder(this)
+        //     .setDebugGeography(com.google.android.ump.ConsentDebugSettings.DebugGeography.DEBUG_GEOGRAPHY_EEA)
+        //     .addTestDeviceHashedId("TEST_DEVICE_HASH")
+        //     .build()
+        // val params = ConsentRequestParameters.Builder().setConsentDebugSettings(debugSettings).build()
+
+        consentInformation = UserMessagingPlatform.getConsentInformation(this)
+        consentInformation.requestConsentInfoUpdate(
+            this,
+            params,
+            {
+                // Infos de consentement à jour → afficher le formulaire si nécessaire
+                UserMessagingPlatform.loadAndShowConsentFormIfRequired(this) { formError ->
+                    if (formError != null) {
+                        Log.w("UMP", "Formulaire consentement: ${formError.errorCode} - ${formError.message}")
+                    }
+                    if (consentInformation.canRequestAds()) {
+                        initializeMobileAdsSdk()
+                    }
+                }
+            },
+            { requestError ->
+                Log.w("UMP", "MAJ consentement échouée: ${requestError.errorCode} - ${requestError.message}")
+                // Échec réseau : on tente quand même si un consentement antérieur autorise les pubs
+                if (consentInformation.canRequestAds()) {
+                    initializeMobileAdsSdk()
+                }
+            }
+        )
+
+        // Cas où le consentement a déjà été recueilli lors d'une session précédente
+        if (consentInformation.canRequestAds()) {
+            initializeMobileAdsSdk()
+        }
+    }
+
+    private fun initializeMobileAdsSdk() {
+        // Garde anti double-init (le chemin synchrone et le callback peuvent tous deux appeler)
+        if (isMobileAdsInitializeCalled.getAndSet(true)) return
+        MobileAds.initialize(this) {
+            // SDK + adaptateurs de médiation initialisés → on charge les pubs
+            runOnUiThread {
+                adView.loadAd(AdRequest.Builder().build())   // bannière
+                loadInterstitial()                            // interstitiel fin de partie
+                loadRewarded()                                // pub récompensée (annulation)
+            }
+        }
+    }
+
+    /** À câbler plus tard sur un bouton "Confidentialité" pour permettre à l'utilisateur de revoir son choix. */
+    fun showPrivacyOptions() {
+        UserMessagingPlatform.showPrivacyOptionsForm(this) { formError ->
+            if (formError != null) {
+                Log.w("UMP", "Options confidentialité: ${formError.errorCode} - ${formError.message}")
+            }
+        }
     }
 
     // ── In-App Updates ──
