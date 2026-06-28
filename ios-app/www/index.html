@@ -1140,7 +1140,7 @@ let _soundEnabled = localStorage.getItem('cinqr_sound') !== '0';
 const EMOJI_DURATION = 3000; // ms d'affichage
 
 // ══ QUOI DE NEUF ══
-const APP_VERSION='1.8.4';
+const APP_VERSION='1.9';
 const WN_FEATURES=[
   {v:'1.0',icon:'🤖',bg:'#311b92,#4527a0',title:'Jeu contre l\'IA',img:'img/wn/ia.png',
    desc:'Jouez seul contre 1 à 7 adversaires IA. Depuis le lobby appuyez sur <b>Partie locale</b>, choisissez le nombre de joueurs et basculez chaque slot en <b>Humain</b> ou <b>IA</b>.'},
@@ -1180,6 +1180,8 @@ const WN_FEATURES=[
    desc:'Vous ne vous souvenez plus de votre mot de passe ? Appuyez sur <b>Mot de passe oublié ?</b> sur l\'écran de connexion pour recevoir un lien de réinitialisation par email.'},
   {v:'1.8.4',icon:'✏️',bg:'#4a148c,#6a1b9a',title:'Changement de pseudo',img:'img/wn/pseudo.png',
    desc:'Modifiez votre pseudonyme depuis votre <b>profil</b> en appuyant sur l\'icône ✏️. Le changement est possible une fois tous les 30 jours.'},
+  {v:'1.9',icon:'↩️',bg:'#0d47a1,#1565c0',title:'Annuler un coup',img:'img/wn/annuler.png',
+   desc:'En partie <b>solo contre l\'IA</b>, vous pouvez désormais <b>annuler votre pioche</b> pour re-choisir entre la pioche et la défausse. Vous disposez de <b>3 annulations gratuites</b> par compte, puis d\'une courte vidéo récompensée pour continuer. Le bouton <b>↩️ Annuler</b> apparaît juste après avoir pioché.'},
 ];
 const SORD={};SUITS.forEach((s,i)=>SORD[s]=i);
 const VALS=[3,4,5,6,7,8,9,10,11,12,13];
@@ -1733,8 +1735,83 @@ let G=null;
 function getBV(){return G.round+2}
 function numHumans(){return G.players.filter(p=>p.isHuman).length}
 
+// ══════════════════════════════════════════
+//  ANNULATION DE COUP (solo IA uniquement)
+// ══════════════════════════════════════════
+window._undoSnap = null;       // snapshot de G pris avant la pioche
+window.CR_FREE_UNDOS = null;   // annulations gratuites restantes (Firebase)
+window._pendingUndo = false;   // en attente d'une pub récompensée
+
+// Copie profonde de G en préservant les Set (ex. G.lastTurns)
+function _cloneG(g){
+  return JSON.parse(
+    JSON.stringify(g, (k,v)=> v instanceof Set ? {__set:[...v]} : v),
+    (k,v)=> (v && v.__set) ? new Set(v.__set) : v
+  );
+}
+
+// Snapshot AVANT la pioche (solo uniquement)
+function _snapBeforeDraw(){
+  if(!NET.mode) window._undoSnap = _cloneG(G);
+}
+
+// Charge le compteur d'annulations gratuites (3 à la 1re fois, par compte)
+async function loadFreeUndos(){
+  if(!CUR_USER){ window.CR_FREE_UNDOS = 0; return; }
+  let v = await fbGet('users/'+CUR_USER.uid+'/cinqrois_freeUndos');
+  if(v===null || v===undefined){
+    v = 3;
+    await fbSet('users/'+CUR_USER.uid+'/cinqrois_freeUndos', v);
+  }
+  window.CR_FREE_UNDOS = v;
+}
+
+// Restaure le snapshot = annule la pioche, retour phase 'draw'
+function _doUndo(){
+  if(!window._undoSnap) return;
+  G = _cloneG(window._undoSnap);
+  window._undoSnap = null;
+  G.selCard = null;
+  if(typeof _stopTurnTimer==='function') _stopTurnTimer();
+  render();
+}
+
+// Clic sur le bouton Annuler
+function onUndoClick(){
+  if(NET.mode || !window._undoSnap) return;            // solo uniquement
+  if(window.CR_FREE_UNDOS===null){ setMsg('Chargement…',''); return; }
+  if(window.CR_FREE_UNDOS > 0){
+    window.CR_FREE_UNDOS--;
+    if(CUR_USER) fbSet('users/'+CUR_USER.uid+'/cinqrois_freeUndos', window.CR_FREE_UNDOS);
+    _doUndo();
+  } else {
+    // Plus de gratuites → pub récompensée
+    if(window.Android && typeof window.Android.showRewarded==='function'){
+      window._pendingUndo = true;
+      setMsg('Chargement de la pub…','');
+      window.Android.showRewarded();
+    } else {
+      setMsg('Pub indisponible sur cette plateforme.','alert');
+    }
+  }
+}
+
+// Appelé par Android quand la récompense est gagnée
+function onRewardEarned(){
+  if(window._pendingUndo && window._undoSnap){
+    window._pendingUndo = false;
+    _doUndo();
+  }
+}
+function onRewardFailed(){
+  window._pendingUndo = false;
+  setMsg('Pub non disponible, réessaie plus tard.','alert');
+  render();
+}
+
 function startLocal(){
   if(!LSP.some(p=>p.isHuman)){alert('Il faut au moins un joueur humain !');return;}
+  loadFreeUndos();
   const players=LSP.map((sp,i)=>({isHuman:sp.isHuman,name:sp.name||`J${i+1}`,color:pc(i),avatar:i===0?_myAvatar:''}));
   show('game');startGame(players);
 }
@@ -1941,6 +2018,7 @@ function onDiscClick(){if(G.phase==='draw'&&isMyHostTurn())humanDrawDiscard()}
 
 function humanDrawDeck(){
   if(G.phase!=='draw')return;
+  _snapBeforeDraw();
   playDrawSound();
   const card=deckDraw();G.players[G.cur].hand.push(card);
   G.phase='act';G.selCard=null;
@@ -1955,6 +2033,7 @@ function humanDrawDiscard(){
   if(top.joker&&G.jokerCanTake!==-1&&G.jokerCanTake!==G.cur){
     setMsg('Ce Joker est réservé au joueur suivant !','alert');render();return;
   }
+  _snapBeforeDraw();
   playDrawSound();
   const card=G.discard.pop();G.players[G.cur].hand.push(card);
   G.jokerCanTake=-1; // joker pris, flag réinitialisé
@@ -1982,6 +2061,7 @@ function humanDiscard(){
   if(gIds.has(G.selCard)){setMsg('Remets la carte en main avant de la défausser.','alert');render();return}
   const p=G.players[G.cur],bv=getBV();
   const card=p.hand.find(c=>c.id===G.selCard);if(!card)return;
+  window._undoSnap=null;
   p.hand=p.hand.filter(c=>c.id!==G.selCard);
   G.meldGroups=G.meldGroups.map(g=>g.filter(id=>id!==G.selCard)).filter(g=>g.length>0);
   G.discard.push(card);
@@ -2342,6 +2422,17 @@ function render(){
     const selInG=G.selCard!==null&&gIds.has(G.selCard);
     const db=document.createElement('button');db.className='btn bred';db.textContent='Défausser';db.disabled=G.selCard===null||selInG;db.onclick=humanDiscard;ab.appendChild(db);
     const gb=document.createElement('button');gb.className='btn bgreen';gb.textContent='Abattre 👑';gb.disabled=!goOk;gb.onclick=humanGoOut;ab.appendChild(gb);
+    // ── Bouton Annuler (solo IA uniquement) ──
+    if(!NET.mode && window._undoSnap){
+      const free=window.CR_FREE_UNDOS;
+      const ub=document.createElement('button');
+      ub.className='btn';
+      ub.style.cssText='background:rgba(255,255,255,.08);border:1px solid var(--gold);color:var(--gold);padding:.52rem .9rem';
+      ub.textContent = (free>0) ? `↩️ Annuler (${free})` : '↩️ Annuler 📺';
+      ub.title = (free>0) ? `${free} annulation(s) gratuite(s)` : 'Regarder une pub pour annuler';
+      ub.onclick = onUndoClick;
+      ab.appendChild(ub);
+    }
     const h=document.createElement('span');h.style.cssText='color:rgba(255,255,255,.25);font-size:.7rem;font-style:italic;align-self:center';
     h.textContent=goOk?'✓ Peut abattre !':G.selCard?(selInG?'Dans un pli':handCards.length+' en main'):handCards.length+' cartes';ab.appendChild(h);
   }else if(NET.mode==='host'&&G.cur!==0&&G.players[G.cur].isHuman){
@@ -2808,9 +2899,15 @@ function saveGameHistory(sorted){
     if(hist.length>10)hist.splice(10);
     localStorage.setItem(key,JSON.stringify(hist));
     // Demander un avis après la 3ème partie complète
+    let reviewJustAsked=false;
     if(hist.length>=3&&!localStorage.getItem('cinqr_review_asked')&&window.Android&&typeof window.Android.requestReview==='function'){
       localStorage.setItem('cinqr_review_asked','1');
+      reviewJustAsked=true;
       setTimeout(()=>window.Android.requestReview(),2000);
+    }
+    // Interstitiel de fin de partie (jamais le même tour que la demande d'avis)
+    if(!reviewJustAsked&&window.Android&&typeof window.Android.showInterstitial==='function'){
+      setTimeout(()=>window.Android.showInterstitial(),600);
     }
   }catch(e){}
   // Mise à jour classement global Firebase
