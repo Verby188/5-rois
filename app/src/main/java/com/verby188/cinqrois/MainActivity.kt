@@ -79,8 +79,8 @@ class MainActivity : AppCompatActivity() {
     // Unite "Annuler un coup" (console AdMob) : ca-app-pub-6145497382360748/4561447136
     // On valide d'abord le cablage avec l'ID de TEST Google ci-dessous, puis on bascule
     // sur la ligne LIVE (commenter TEST / decommenter LIVE) une fois le flux confirme.
-    private val rewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"          // TEST
-    // private val rewardedAdUnitId = "ca-app-pub-6145497382360748/4561447136"       // LIVE
+    // private val rewardedAdUnitId = "ca-app-pub-3940256099942544/5224354917"          // TEST
+    private val rewardedAdUnitId = "ca-app-pub-6145497382360748/4561447136"       // LIVE
     private var pendingCode: String? = null
     private var pendingNotifData: String? = null
 
