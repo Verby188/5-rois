@@ -1787,6 +1787,7 @@ function onUndoClick(){
   } else {
     // Plus de gratuites → pub récompensée
     if(window.Android && typeof window.Android.showRewarded==='function'){
+      if(typeof _stopTurnTimer==='function') _stopTurnTimer();
       window._pendingUndo = true;
       setMsg('Chargement de la pub…','');
       window.Android.showRewarded();
@@ -2024,7 +2025,7 @@ function humanDrawDeck(){
   G.phase='act';G.selCard=null;
   setMsg(`Tu pioches ${card.joker?'un Joker':dv(card.val)+card.suit}. Sélectionne une carte à défausser.`,'');
   if(G.sortBy)applySort();else{render();broadcast();}
-  _startTurnTimer();
+  if(NET.mode)_startTurnTimer();
 }
 function humanDrawDiscard(){
   if(G.phase!=='draw'||!G.discard.length)return;
@@ -2040,7 +2041,7 @@ function humanDrawDiscard(){
   G.phase='act';G.selCard=null;
   setMsg(`Tu prends ${card.joker?'un Joker':dv(card.val)+card.suit}. Sélectionne une carte à défausser.`,'');
   if(G.sortBy)applySort();else{render();broadcast();}
-  _startTurnTimer();
+  if(NET.mode)_startTurnTimer();
 }
 function humanSelCard(cid){if(G.phase!=='act')return;G.selCard=G.selCard===cid?null:cid;render()}
 function humanToGrp(gIdx){const gIds=new Set(G.meldGroups.flat());if(G.selCard===null||gIds.has(G.selCard))return;if(gIdx===-1)G.meldGroups.push([G.selCard]);else G.meldGroups[gIdx].push(G.selCard);G.selCard=null;render()}
@@ -2812,6 +2813,7 @@ function _renderTurnTimer(){
 }
 
 function _autoPlay(){
+  if(window._pendingUndo)return; // annulation en attente : ne pas terminer le tour
   // Pioche auto depuis le deck si en phase draw
   if(G&&G.phase==='draw'){
     const card=deckDraw();G.players[G.cur].hand.push(card);
