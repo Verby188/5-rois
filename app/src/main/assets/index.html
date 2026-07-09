@@ -807,6 +807,10 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
   <h1>Cinq<br>Couronnes</h1>
   <div class="sub">Five Crowns</div>
   <div class="lobby-btns">
+    <button class="lbtn" onclick="resumeGame()" id="resume-btn" style="display:none">
+      <span class="lbtn-icon">▶️</span>
+      <div><div>Reprendre la partie</div><div class="lbtn-sub">Continuer votre partie solo en cours</div></div>
+    </button>
     <button class="lbtn" onclick="show('s-local')">
       <span class="lbtn-icon">🖥️</span>
       <div><div>Jouer en local</div><div class="lbtn-sub">Même appareil, 1 à 8 joueurs avec passation</div></div>
@@ -1197,6 +1201,7 @@ function show(id){
   });
   // Rafraîchir la config locale à chaque ouverture pour injecter le pseudo connecté
   if(id==='s-local')buildLS();
+  if(id==='s-lobby')_refreshResumeBtn();
 }
 
 // ══ LOCAL SETUP ══
@@ -1810,6 +1815,56 @@ function onRewardFailed(){
   render();
 }
 
+// ══════════════════════════════════════════
+//  SAUVEGARDE / REPRISE DE PARTIE (solo vs IA)
+// ══════════════════════════════════════════
+const CR_SAVE_KEY = 'cinqrois_savedGame';
+
+// Sérialise G en préservant les Set (même schéma que _cloneG)
+function _serG(g){
+  return JSON.stringify(g, (k,v)=> v instanceof Set ? {__set:[...v]} : v);
+}
+
+// Enregistre la partie en cours — solo contre l'IA uniquement
+function _saveGame(){
+  try{
+    if(NET.mode || !G || numHumans()!==1) return;      // ni multijoueur ni local à plusieurs
+    if(G.phase==='game_over' || G.round>11) return;
+    localStorage.setItem(CR_SAVE_KEY, _serG(G));
+  }catch(e){}
+}
+
+function hasSavedGame(){
+  try{ return !!localStorage.getItem(CR_SAVE_KEY); }catch(e){ return false; }
+}
+
+function _clearSave(){
+  try{ localStorage.removeItem(CR_SAVE_KEY); }catch(e){}
+  _refreshResumeBtn();
+}
+
+// Affiche/masque le bouton « Reprendre » selon qu'une sauvegarde existe
+function _refreshResumeBtn(){
+  const b = document.getElementById('resume-btn');
+  if(b) b.style.display = hasSavedGame() ? '' : 'none';
+}
+
+// Reprend la partie sauvegardée au bon état
+function resumeGame(){
+  let raw;
+  try{ raw = localStorage.getItem(CR_SAVE_KEY); }catch(e){ raw = null; }
+  if(!raw){ _refreshResumeBtn(); return; }
+  try{
+    G = JSON.parse(raw, (k,v)=> (v && v.__set) ? new Set(v.__set) : v);
+  }catch(e){ setMsg('Sauvegarde illisible, impossible de reprendre.','alert'); return; }
+  window._undoSnap = null; window._pendingUndo = false;
+  if(typeof loadFreeUndos==='function') loadFreeUndos();
+  show('game'); if(typeof setBadge==='function') setBadge();
+  if(G.phase==='ai_turn'){ render(); setTimeout(doAI, 900); }        // relancer l'IA
+  else if(G.phase==='round_end'){ render(); showRoundPopup(); }      // reprendre au décompte
+  else { render(); }                                                // phase draw / act
+}
+
 function startLocal(){
   if(!LSP.some(p=>p.isHuman)){alert('Il faut au moins un joueur humain !');return;}
   loadFreeUndos();
@@ -1818,6 +1873,7 @@ function startLocal(){
 }
 
 function startGame(playersConfig){
+  _clearSave();
   G={round:1,phase:'draw',deck:[],discard:[],players:[],cur:0,goingOut:-1,
      lastTurns:new Set(),selCard:null,meldGroups:[],sortBy:null,msg:'',msgType:'',
      jokerCanTake:-1,emojis:{}}; // -1=libre, idx=réservé, -2=bloqué
@@ -1845,6 +1901,7 @@ function startRound(){
     else if(numHumans()>1){showCover();}
     else{G.phase='draw';render();notifyMyTurn(starter.name,starter.color,'Piochez une carte');}
   }else{G.phase='ai_turn';render();broadcast();setTimeout(doAI,1200);}
+  _saveGame();
 }
 
 function deckDraw(){if(!G.deck.length){const last=G.discard.pop();G.deck=shuffle([...G.discard]);G.discard=[last];}return G.deck.pop()}
@@ -1899,6 +1956,7 @@ function advance(){
       notifyMyTurn(p.name,p.color,G.goingOut!==-1?'⚡ Dernier tour !':'Piochez une carte');
     }
   }else{G.phase='ai_turn';render();broadcast();setTimeout(doAI,1000);}
+  _saveGame();
 }
 
 function endRound(){
@@ -1906,6 +1964,7 @@ function endRound(){
   for(let i=0;i<G.players.length;i++){const p=G.players[i];if(i===G.goingOut)p.roundScore=0;p.totalScore+=p.roundScore;}
   document.getElementById('cover').classList.remove('on');
   render();broadcast();showRoundPopup();
+  _saveGame();
 }
 
 function showRoundPopup(){
@@ -2026,6 +2085,7 @@ function humanDrawDeck(){
   setMsg(`Tu pioches ${card.joker?'un Joker':dv(card.val)+card.suit}. Sélectionne une carte à défausser.`,'');
   if(G.sortBy)applySort();else{render();broadcast();}
   if(NET.mode)_startTurnTimer();
+  _saveGame();
 }
 function humanDrawDiscard(){
   if(G.phase!=='draw'||!G.discard.length)return;
@@ -2042,6 +2102,7 @@ function humanDrawDiscard(){
   setMsg(`Tu prends ${card.joker?'un Joker':dv(card.val)+card.suit}. Sélectionne une carte à défausser.`,'');
   if(G.sortBy)applySort();else{render();broadcast();}
   if(NET.mode)_startTurnTimer();
+  _saveGame();
 }
 function humanSelCard(cid){if(G.phase!=='act')return;G.selCard=G.selCard===cid?null:cid;render()}
 function humanToGrp(gIdx){const gIds=new Set(G.meldGroups.flat());if(G.selCard===null||gIds.has(G.selCard))return;if(gIdx===-1)G.meldGroups.push([G.selCard]);else G.meldGroups[gIdx].push(G.selCard);G.selCard=null;render()}
@@ -2893,6 +2954,7 @@ function launchConfetti(winColor){
 
 // ══ HISTORIQUE DES PARTIES ══
 function saveGameHistory(sorted){
+  _clearSave();
   if(!CUR_USER)return;
   try{
     const key='cinqr_history_'+CUR_USER.uid;
