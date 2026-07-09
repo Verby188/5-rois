@@ -4034,6 +4034,7 @@ function renderThemesInProfile(){
 const LANGS={
   fr:{
     'Jouer en local':'Jouer en local','Même appareil, 1 à 8 joueurs avec passation':'Même appareil, 1 à 8 joueurs avec passation',
+    'Reprendre la partie':'Reprendre la partie','Continuer votre partie solo en cours':'Continuer votre partie solo en cours',
     'Multijoueur en ligne':'Multijoueur en ligne','Chaque joueur sur son propre appareil':'Chaque joueur sur son propre appareil',
     'Règles du jeu':'Règles du jeu','Suites, familles, Bonus et stratégies':'Suites, familles, Bonus et stratégies',
     'Amis':'Amis','Gérer votre liste d\'amis':'Gérer votre liste d\'amis',
@@ -4047,6 +4048,7 @@ const LANGS={
   },
   en:{
     'Jouer en local':'Play locally','Même appareil, 1 à 8 joueurs avec passation':'Same device, 1–8 players',
+    'Reprendre la partie':'Resume game','Continuer votre partie solo en cours':'Continue your solo game in progress',
     'Multijoueur en ligne':'Online multiplayer','Chaque joueur sur son propre appareil':'Each player on their own device',
     'Règles du jeu':'Game rules','Suites, familles, Bonus et stratégies':'Runs, sets, Bonus and strategies',
     'Amis':'Friends','Gérer votre liste d\'amis':'Manage your friend list',
@@ -4069,7 +4071,7 @@ function toggleLang(){
 function applyLang(){
   document.getElementById('lang-btn').textContent=_lang==='fr'?'🇫🇷':'🇬🇧';
   // Lobby buttons
-  const btns=document.querySelectorAll('.lbtn');
+  const btns=document.querySelectorAll('.lbtn:not(#resume-btn)');
   const keys=[
     ['Jouer en local','Même appareil, 1 à 8 joueurs avec passation'],
     ['Multijoueur en ligne','Chaque joueur sur son propre appareil'],
@@ -4082,6 +4084,11 @@ function applyLang(){
     if(divs[0])divs[0].textContent=_T(keys[i][0]);
     if(divs[1])divs[1].textContent=_T(keys[i][1]);
   });
+  // Bouton Reprendre : traduit à part (exclu du mapping positionnel)
+  const rb=document.getElementById('resume-btn');
+  if(rb){const rd=rb.querySelectorAll('div > div');
+    if(rd[0])rd[0].textContent=_T('Reprendre la partie');
+    if(rd[1])rd[1].textContent=_T('Continuer votre partie solo en cours');}
   // Auth tabs
   const tLogin=document.getElementById('tab-login');
   const tReg=document.getElementById('tab-register');
