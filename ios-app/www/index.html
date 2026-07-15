@@ -947,6 +947,13 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
     <button class="back-btn" onclick="show('s-lobby')" style="margin-bottom:1rem">← Retour</button>
     <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.2rem;margin-bottom:.8rem;text-align:center">🏆 Classement Global</h2>
 
+    <!-- Format -->
+    <div style="display:flex;gap:.4rem;margin-bottom:.5rem;justify-content:center" id="lb-fmt-btns">
+      <button class="bsm gold" id="lb-fmt-all" onclick="lbSetFmt('all')">Les 2</button>
+      <button class="bsm" id="lb-fmt-full" onclick="lbSetFmt('full')">👑 Complète</button>
+      <button class="bsm" id="lb-fmt-fast" onclick="lbSetFmt('fast')">⚡ Rapide</button>
+    </div>
+
     <!-- Tri -->
     <div style="display:flex;gap:.4rem;margin-bottom:1rem;justify-content:center" id="lb-sort-btns">
       <button class="bsm gold" id="lb-sort-wins" onclick="lbSetSort('wins')">🥇 Victoires</button>
@@ -991,6 +998,7 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
     <h1 style="font-size:2rem">Partie locale</h1>
     <div class="scard">
       <button class="back-btn" onclick="show('s-lobby')">← Retour</button>
+      <div><div class="slbl">Format de partie</div><div class="cnt-row" id="l-fmt-row"></div></div>
       <div><div class="slbl">Nombre de joueurs</div><div class="cnt-row" id="l-cnt-row"></div></div>
       <div><div class="slbl">Configuration</div><div class="player-rows" id="l-prows"></div></div>
       <button class="gbtn" onclick="startLocal()">Jouer !</button>
@@ -1011,6 +1019,7 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
       <div class="net-section">
         <div class="slbl">Créer une partie</div>
         <input class="name-input" id="host-name" placeholder="Ton nom" maxlength="14">
+        <div><div class="slbl" style="margin-bottom:.3rem">Format de partie</div><div class="cnt-row" id="n-fmt-row"></div></div>
         <div><div class="slbl" style="margin-bottom:.3rem">Adversaires IA</div><div class="cnt-row" id="n-ai-row"></div></div>
         <button class="gbtn" onclick="doCreate()">Créer la partie</button>
       </div>
@@ -1204,9 +1213,33 @@ function show(id){
   if(id==='s-lobby')_refreshResumeBtn();
 }
 
+// ══ FORMAT DE PARTIE ══
+// startRound 1 = partie complète (3→13 cartes, 11 manches)
+// startRound 4 = partie rapide (6→13 cartes, 8 manches) — variante officielle
+const FORMATS=[{sr:1,lbl:'Complète',sub:'11 manches · 3→13 cartes'},
+               {sr:4,lbl:'Rapide',sub:'8 manches · 6→13 cartes'}];
+let LS_START=1, NET_START=1;
+
+// Libellé de manche adapté au format : "Manche 2/8" en rapide, "Manche 2/11" en complète
+function roundLabel(r,sr){sr=sr||1;return `Manche ${r-sr+1}/${12-sr}`;}
+
+function buildFmtRow(id,cur,setFn){
+  const row=document.getElementById(id);if(!row)return;
+  row.innerHTML='';
+  FORMATS.forEach(f=>{
+    const b=document.createElement('button');
+    b.className='cnt-btn'+(cur===f.sr?' sel':'');
+    b.style.cssText='flex:1;min-width:0;padding:.5rem .3rem;height:auto';
+    b.innerHTML=`<div style="font-weight:600">${f.lbl}</div><div style="font-size:.62rem;opacity:.7;margin-top:.15rem">${f.sub}</div>`;
+    b.onclick=()=>setFn(f.sr);
+    row.appendChild(b);
+  });
+}
+
 // ══ LOCAL SETUP ══
 let LSP=[{name:'Joueur 1',isHuman:true},{name:'IA',isHuman:false}];
 function buildLS(){
+  buildFmtRow('l-fmt-row',LS_START,v=>{LS_START=v;buildLS()});
   const cr=document.getElementById('l-cnt-row');cr.innerHTML='';
   for(let n=2;n<=8;n++){
     const b=document.createElement('button');b.className='cnt-btn'+(LSP.length===n?' sel':'');
@@ -1232,6 +1265,7 @@ buildLS();
 // Network — max 8 joueurs humains, l'hôte démarre quand il veut
 let NET_EXP=8,NET_AI=0;
 function buildNetSel(){
+  buildFmtRow('n-fmt-row',NET_START,v=>{NET_START=v;buildNetSel()});
   const ar=document.getElementById('n-ai-row');ar.innerHTML='';
   for(let n=0;n<=4;n++){
     const b=document.createElement('button');b.className='cnt-btn'+(NET_AI===n?' sel':'');
@@ -1461,7 +1495,7 @@ function hostStart(){
     for(let i=0;i<maxAI;i++)players.push({isHuman:false,name:'IA '+(i+1),color:pc(humanCount+i)});
     NET.expectedHumans=humanCount;
     fbSet('cinqrois_rooms/'+NET.roomCode+'/started',true);
-    startGame(players);
+    startGame(players,NET_START);
   }
 }
 
@@ -1661,7 +1695,7 @@ function renderSpectator(s){
   if(!s)return;
   const bv=s.bv;
   // Header
-  document.getElementById('spec-rlbl').textContent=`Manche ${s.round}/11`;
+  document.getElementById('spec-rlbl').textContent=roundLabel(s.round,s.startRound);
   document.getElementById('spec-blbl').textContent=`Bonus: ${dv(bv)}`;
   // Scores
   const sc=document.getElementById('spec-scores');sc.innerHTML='';
@@ -1869,12 +1903,13 @@ function startLocal(){
   if(!LSP.some(p=>p.isHuman)){alert('Il faut au moins un joueur humain !');return;}
   loadFreeUndos();
   const players=LSP.map((sp,i)=>({isHuman:sp.isHuman,name:sp.name||`J${i+1}`,color:pc(i),avatar:i===0?_myAvatar:''}));
-  show('game');startGame(players);
+  show('game');startGame(players,LS_START);
 }
 
-function startGame(playersConfig){
+function startGame(playersConfig,startRound){
   _clearSave();
-  G={round:1,phase:'draw',deck:[],discard:[],players:[],cur:0,goingOut:-1,
+  const _sr=startRound||1;
+  G={round:_sr,startRound:_sr,phase:'draw',deck:[],discard:[],players:[],cur:0,goingOut:-1,
      lastTurns:new Set(),selCard:null,meldGroups:[],sortBy:null,msg:'',msgType:'',
      jokerCanTake:-1,emojis:{}}; // -1=libre, idx=réservé, -2=bloqué
   playersConfig.forEach(sp=>{
@@ -1893,7 +1928,7 @@ function startRound(){
   G.discard.push(G.deck.splice(0,1)[0]);
   G.cur=(G.round-1)%G.players.length;
   const starter=G.players[G.cur];
-  setMsg(`Manche ${G.round}/11 — Bonus: ${dv(bv)} — ${starter.name} commence`,'');
+  setMsg(`${roundLabel(G.round,G.startRound)} — Bonus: ${dv(bv)} — ${starter.name} commence`,'');
   if(starter.isHuman){
     if(NET.mode==='host'){G.phase='draw';render();broadcast();
       if(G.cur===0)notifyMyTurn(starter.name,starter.color,'Piochez une carte');
@@ -1968,7 +2003,7 @@ function endRound(){
 }
 
 function showRoundPopup(){
-  document.getElementById('ptitle').textContent=`Fin Manche ${G.round}/11 — Bonus: ${dv(getBV())}`;
+  document.getElementById('ptitle').textContent=`Fin ${roundLabel(G.round,G.startRound)} — Bonus: ${dv(getBV())}`;
   const rows=document.getElementById('prows');rows.innerHTML='';
   G.players.forEach((p,i)=>{
     const row=document.createElement('div');row.className='prow'+(i===G.goingOut?' out':'');
@@ -1988,7 +2023,7 @@ function showRoundPopup(){
 }
 
 function showPopupFromGS(){
-  document.getElementById('ptitle').textContent=`Fin Manche ${GS.round}/11`;
+  document.getElementById('ptitle').textContent=`Fin ${roundLabel(GS.round,GS.startRound)}`;
   const rows=document.getElementById('prows');rows.innerHTML='';
   GS.players.forEach((p,i)=>{
     const row=document.createElement('div');row.className='prow'+(i===GS.goingOut?' out':'');
@@ -2044,15 +2079,16 @@ function doRematch(){
   if(!G&&!NET.mode)return;
   document.getElementById('rematch-btn').style.display='none';
   document.getElementById('rematch-status').style.display='none';
+  const _sr=(G&&G.startRound)||1;   // revanche : même format que la partie précédente
   if(!NET.mode){
     // Local : recréer avec mêmes joueurs, scores remis à zéro
     const players=G.players.map(p=>({isHuman:p.isHuman,name:p.name,color:p.color}));
-    show('game');startGame(players);
+    show('game');startGame(players,_sr);
   } else if(NET.mode==='host'){
-    // Réseau : garder même salle et mêmes guests, repartir depuis round 1
+    // Réseau : garder même salle et mêmes guests, repartir depuis la manche de départ
     const players=G.players.map(p=>({isHuman:p.isHuman,name:p.name,color:p.color}));
     G=null;GS=null;
-    startGame(players); // startGame appelle show('game') + broadcast
+    startGame(players,_sr); // startGame appelle show('game') + broadcast
   }
 }
 
@@ -2339,7 +2375,7 @@ function render(){
   const gIds=new Set(G.meldGroups.flat());
 
   // Header scores — clic pour voir le détail de la manche
-  document.getElementById('rlbl').textContent=`Manche ${G.round}/11`;
+  document.getElementById('rlbl').textContent=roundLabel(G.round,G.startRound);
   document.getElementById('blbl').textContent=`Bonus: ${dv(bv)}`;
   const sc=document.getElementById('scores');sc.innerHTML='';
   G.players.forEach((p,i)=>{
@@ -2512,7 +2548,7 @@ function renderGuest(){
   const myP=GS.players[myIdx];
 
   // Header scores
-  document.getElementById('rlbl').textContent=`Manche ${GS.round}/11`;
+  document.getElementById('rlbl').textContent=roundLabel(GS.round,GS.startRound);
   document.getElementById('blbl').textContent=`Bonus: ${dv(bv)}`;
   const sc=document.getElementById('scores');sc.innerHTML='';
   GS.players.forEach((p,i)=>{
@@ -2987,12 +3023,19 @@ async function updateLeaderboard(sorted){
     const won=sorted[0].name===CUR_USER.pseudo; // plus bas score = gagnant
     // Lire l'entrée actuelle
     const cur=await fbGet('leaderboard/'+CUR_USER.uid)||{wins:0,games:0,totalScore:0};
+    // Format joué : startRound 4 = partie rapide. Les totaux restent tous formats
+    // confondus ; on ne stocke QUE le cumul "rapide". La partie complète se déduit
+    // par soustraction (total - fast), ce qui rend l'historique existant valide.
+    const _sr=((typeof G!=='undefined'&&G&&G.startRound)||(typeof GS!=='undefined'&&GS&&GS.startRound)||1);
+    const isFast=(_sr===4);
+    const cf=cur.fast||{wins:0,games:0,totalScore:0};
     const newEntry={
       pseudo:CUR_USER.pseudo,
       avatar:_myAvatar||'👑',
       wins:(cur.wins||0)+(won?1:0),
       games:(cur.games||0)+1,
       totalScore:(cur.totalScore||0)+myScore,
+      fast:isFast?{wins:(cf.wins||0)+(won?1:0),games:(cf.games||0)+1,totalScore:(cf.totalScore||0)+myScore}:cf,
       lastPlayed:Date.now()
     };
     await fbSet('leaderboard/'+CUR_USER.uid,newEntry);
@@ -3001,28 +3044,52 @@ async function updateLeaderboard(sorted){
 
 // ══ CLASSEMENT GLOBAL ══
 let _lbSort='wins'; // 'wins' | 'pct' | 'avg'
+let _lbFmt='all';   // 'all' | 'full' | 'fast'
+let _lbData=null;   // cache : évite de recharger Firebase à chaque changement de filtre
+
+// Stats du joueur selon le format sélectionné.
+// 'fast' = cumul rapide ; 'full' = total - fast ; 'all' = total.
+function _lbStats(d){
+  const tg=d.games||0,tw=d.wins||0,ts=d.totalScore||0;
+  const f=d.fast||{},fg=f.games||0,fw=f.wins||0,fs=f.totalScore||0;
+  if(_lbFmt==='fast')return{games:fg,wins:fw,totalScore:fs};
+  if(_lbFmt==='full')return{games:Math.max(0,tg-fg),wins:Math.max(0,tw-fw),totalScore:Math.max(0,ts-fs)};
+  return{games:tg,wins:tw,totalScore:ts};
+}
+
+function _lbUpdateBtns(){
+  ['wins','pct','avg'].forEach(s=>{
+    const b=document.getElementById('lb-sort-'+s);
+    if(b)b.className='bsm'+(s===_lbSort?' gold':'');
+  });
+  ['all','full','fast'].forEach(f=>{
+    const b=document.getElementById('lb-fmt-'+f);
+    if(b)b.className='bsm'+(f===_lbFmt?' gold':'');
+  });
+}
 
 async function openLeaderboard(){
   show('s-leaderboard');
   document.getElementById('lb-list').innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.85rem;text-align:center;padding:2rem">Chargement…</div>';
   document.getElementById('lb-my-rank').style.display='none';
-  lbSetSort(_lbSort,false); // update button states without reloading
+  _lbUpdateBtns();
   try{
-    const data=await fbGet('leaderboard');
-    renderLeaderboard(data);
+    _lbData=await fbGet('leaderboard')||{};
+    renderLeaderboard(_lbData);
   }catch(e){
     document.getElementById('lb-list').innerHTML='<div style="color:#ef9a9a;font-size:.8rem;text-align:center;padding:2rem">Erreur de chargement</div>';
   }
 }
 
+// Re-trier / re-filtrer sans recharger Firebase (les données sont en cache)
 function lbSetSort(sort){
-  _lbSort=sort;
-  ['wins','pct','avg'].forEach(s=>{
-    const btn=document.getElementById('lb-sort-'+s);
-    if(btn)btn.className='bsm'+(s===sort?' gold':'');
-  });
-  // Re-trier si déjà chargé
-  openLeaderboard();
+  _lbSort=sort;_lbUpdateBtns();
+  if(_lbData)renderLeaderboard(_lbData);else openLeaderboard();
+}
+
+function lbSetFmt(fmt){
+  _lbFmt=fmt;_lbUpdateBtns();
+  if(_lbData)renderLeaderboard(_lbData);else openLeaderboard();
 }
 
 function renderLeaderboard(data){
@@ -3031,16 +3098,25 @@ function renderLeaderboard(data){
     list.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.85rem;text-align:center;padding:2rem">Aucun joueur pour l\'instant</div>';
     return;
   }
-  // Construire tableau
-  const entries=Object.entries(data).map(([uid,d])=>({
-    uid,
-    pseudo:d.pseudo||'?',
-    avatar:d.avatar||'👑',
-    wins:d.wins||0,
-    games:d.games||0,
-    avgScore:d.games>0?Math.round(d.totalScore/d.games):999,
-    pct:d.games>0?Math.round((d.wins/d.games)*100):0
-  })).filter(e=>e.games>0);
+  // Construire tableau (stats filtrées par format)
+  const entries=Object.entries(data).map(([uid,d])=>{
+    const st=_lbStats(d);
+    return{
+      uid,
+      pseudo:d.pseudo||'?',
+      avatar:d.avatar||'👑',
+      wins:st.wins,
+      games:st.games,
+      avgScore:st.games>0?Math.round(st.totalScore/st.games):999,
+      pct:st.games>0?Math.round((st.wins/st.games)*100):0
+    };
+  }).filter(e=>e.games>0);
+
+  if(!entries.length){
+    list.innerHTML='<div style="color:rgba(255,255,255,.3);font-size:.85rem;text-align:center;padding:2rem">Aucune partie '+(_lbFmt==='fast'?'rapide':'complète')+' pour l\'instant</div>';
+    const mr=document.getElementById('lb-my-rank');if(mr)mr.style.display='none';
+    return;
+  }
 
   // Trier selon critère
   if(_lbSort==='wins')entries.sort((a,b)=>b.wins-a.wins||b.pct-a.pct||a.avgScore-b.avgScore);
