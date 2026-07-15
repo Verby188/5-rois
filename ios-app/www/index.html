@@ -1906,9 +1906,9 @@ function startLocal(){
   show('game');startGame(players,LS_START);
 }
 
-function startGame(playersConfig,startRound){
+function startGame(playersConfig,firstRound){
   _clearSave();
-  const _sr=startRound||1;
+  const _sr=firstRound||1;   // 1 = partie complète, 4 = partie rapide
   G={round:_sr,startRound:_sr,phase:'draw',deck:[],discard:[],players:[],cur:0,goingOut:-1,
      lastTurns:new Set(),selCard:null,meldGroups:[],sortBy:null,msg:'',msgType:'',
      jokerCanTake:-1,emojis:{}}; // -1=libre, idx=réservé, -2=bloqué
