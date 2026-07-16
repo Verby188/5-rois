@@ -1,0 +1,70 @@
+# ─────────────────────────────────────────────────────────────
+#  SECRETS — ne JAMAIS committer (dépôt public !)
+# ─────────────────────────────────────────────────────────────
+# Clé API App Store Connect
+AuthKey_*.p8
+keyID.txt
+UserID.txt
+issuerID.txt
+
+# Identité de signature iOS
+*.p12
+*.pem
+*.cer
+*.csr
+*.key
+*.mobileprovision
+*.certSigningRequest
+
+# Versions base64 (destinées aux secrets GitHub Actions)
+*_base64.txt
+apikey_base64.txt
+distribution_base64.txt
+profile_base64.txt
+
+# Keystore Android
+*.jks
+*.keystore
+keystore.properties
+
+# Jetons / identifiants d'API
+tokens.json
+oauth_client.json
+service-account*.json
+.env
+.env.*
+
+# Rapports générés par fetch_reports.py (contiennent des données utilisateurs)
+rapports/
+
+# ─────────────────────────────────────────────────────────────
+#  BUILD
+# ─────────────────────────────────────────────────────────────
+build/
+app/build/
+.gradle/
+local.properties
+*.apk
+*.aab
+captures/
+.externalNativeBuild/
+.cxx/
+
+# ─────────────────────────────────────────────────────────────
+#  iOS / Capacitor
+# ─────────────────────────────────────────────────────────────
+ios-app/App/Pods/
+ios-app/App/build/
+ios-app/App/DerivedData/
+*.xcuserstate
+xcuserdata/
+node_modules/
+
+# ─────────────────────────────────────────────────────────────
+#  IDE / OS
+# ─────────────────────────────────────────────────────────────
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
