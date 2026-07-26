@@ -277,6 +277,15 @@ window.__CR_LANGS__ = {
   "Demande annulée.": {"en":"Request cancelled.","it":"Richiesta annullata.","es":"Solicitud cancelada.","de":"Anfrage abgebrochen.","pt":"Pedido cancelado."},
   "Réservé": {"en":"Locked","it":"Riservato","es":"Reservado","de":"Gesperrt","pt":"Reservado"},
 
+  /* ── Réorganisation manuelle ────────────────────────────────────── */
+  "Dépose la carte à l'endroit voulu.": {"en": "Drop the card where you want it.", "it": "Rilascia la carta dove vuoi.", "es": "Suelta la carta donde quieras.", "de": "Lege die Karte an die gewünschte Stelle.", "pt": "Larga a carta onde quiseres."},
+
+  /* ── Réparation de profil ───────────────────────────────────────── */
+  "Choisis ton pseudo": {"en": "Choose your nickname", "it": "Scegli il tuo soprannome", "es": "Elige tu apodo", "de": "Wähle deinen Spielernamen", "pt": "Escolhe o teu apelido"},
+  "Ton compte n'a pas encore de pseudo. Choisis-en un pour apparaître au classement.": {"en": "Your account has no nickname yet. Pick one to appear in the ranking.", "it": "Il tuo account non ha ancora un soprannome. Scegline uno per apparire in classifica.", "es": "Tu cuenta aún no tiene apodo. Elige uno para aparecer en la clasificación.", "de": "Dein Konto hat noch keinen Spielernamen. Wähle einen, um in der Rangliste zu erscheinen.", "pt": "A tua conta ainda não tem apelido. Escolhe um para apareceres na classificação."},
+  "Ton pseudo": {"en": "Your nickname", "it": "Il tuo soprannome", "es": "Tu apodo", "de": "Dein Spielername", "pt": "O teu apelido"},
+  "Valider": {"en": "Confirm", "it": "Conferma", "es": "Confirmar", "de": "Bestätigen", "pt": "Confirmar"},
+
   /* ── Titre du jeu + salle d'attente ─────────────────────────────── */
   "Cinq": {"en": "Five", "it": "Cinque", "es": "Cinco", "de": "Fünf", "pt": "Cinco"},
   "Couronnes": {"en": "Crowns", "it": "Corone", "es": "Coronas", "de": "Kronen", "pt": "Coroas"},

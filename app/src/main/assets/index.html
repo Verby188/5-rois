@@ -635,6 +635,7 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 .av-sm{width:28px;height:28px;font-size:1.1rem}
 .av-xs{width:20px;height:20px;font-size:.85rem}
 
+.card.grabbed{outline:3px solid var(--gold);outline-offset:2px;transform:translateY(-8px) scale(1.05);box-shadow:0 8px 24px rgba(0,0,0,.5)!important;z-index:20;opacity:.92}
 </style>
 </head>
 <body>
@@ -663,6 +664,17 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 </div>
 
 <!-- ══ PROFIL MODAL ══ -->
+<!-- ── Réparation d'un compte sans pseudo (inscription interrompue) ── -->
+<div id="fixprofile-modal" style="display:none;position:fixed;inset:0;z-index:700;background:rgba(0,0,0,.8);align-items:center;justify-content:center;padding:1.5rem">
+  <div style="background:var(--card-bg,#0d3b1e);border:1px solid var(--gold);border-radius:14px;padding:1.2rem;max-width:340px;width:100%">
+    <div style="font-family:Cinzel,serif;color:var(--gold);font-size:1.05rem;margin-bottom:.5rem">Choisis ton pseudo</div>
+    <div style="font-size:.78rem;color:var(--text-muted);line-height:1.5;margin-bottom:.7rem">Ton compte n'a pas encore de pseudo. Choisis-en un pour apparaître au classement.</div>
+    <input class="auth-inp" id="fp-input" placeholder="Ton pseudo" maxlength="14" style="margin-bottom:.4rem">
+    <div id="fp-err" style="font-size:.7rem;color:#ef5350;min-height:1rem;margin-bottom:.4rem"></div>
+    <button class="gbtn" style="width:100%;padding:.55rem;font-size:.85rem" onclick="saveFixProfile()">Valider</button>
+  </div>
+</div>
+
 <div id="profile-modal" style="display:none;position:fixed;inset:0;z-index:600;background:rgba(0,0,0,.7);align-items:center;justify-content:center;padding:1.5rem;overflow:hidden">
   <div class="scard" style="max-width:340px;width:100%;position:relative;max-height:88vh;overflow-y:auto;overscroll-behavior:contain">
     <button onclick="closeProfileModal()" style="position:absolute;top:.7rem;right:.9rem;background:none;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer">✕</button>
@@ -2178,6 +2190,76 @@ function humanToGrp(gIdx){const gIds=new Set(G.meldGroups.flat());if(G.selCard==
 function humanFrGrp(cid,gi){G.meldGroups[gi]=G.meldGroups[gi].filter(id=>id!==cid);if(!G.meldGroups[gi].length)G.meldGroups.splice(gi,1);render()}
 function humanDelGrp(gi){G.meldGroups.splice(gi,1);render()}
 function humanSort(by){G.sortBy=G.sortBy===by?null:by;applySort()}
+// ══ RÉORGANISATION MANUELLE DE LA MAIN (appui long puis dépose) ══
+// Un appui bref = sélection (comportement existant). Un appui maintenu (>400ms)
+// « saisit » la carte ; la déposer sur une autre l'insère à cette place.
+// L'ordre vit dans p.hand (comme le tri), donc il PERSISTE de tour en tour.
+window._grabCardId = null;   // carte saisie par appui long
+let _lpTimer=null, _lpStartX=0, _lpStartY=0, _lpMoved=false;
+
+function _attachLongPressReorder(el, cardId){
+  // Démarrer le minuteur d'appui long
+  const start=(x,y)=>{
+    _lpMoved=false; _lpStartX=x; _lpStartY=y;
+    _lpTimer=setTimeout(()=>{
+      _lpTimer=null;
+      window._grabCardId=cardId;
+      _renderGrabState();
+      if(navigator.vibrate)navigator.vibrate(15);
+    },400);
+  };
+  const cancel=()=>{ if(_lpTimer){clearTimeout(_lpTimer);_lpTimer=null;} };
+
+  el.addEventListener('pointerdown',e=>{
+    // si une carte est déjà saisie, un appui ici = dépose (géré au pointerup/click)
+    if(window._grabCardId!==null) return;
+    start(e.clientX,e.clientY);
+  });
+  el.addEventListener('pointermove',e=>{
+    if(_lpTimer){
+      const dx=Math.abs(e.clientX-_lpStartX), dy=Math.abs(e.clientY-_lpStartY);
+      if(dx>10||dy>10){_lpMoved=true;cancel();}   // c'est un scroll, pas un appui long
+    }
+  });
+  el.addEventListener('pointerup',cancel);
+  el.addEventListener('pointercancel',cancel);
+  el.addEventListener('pointerleave',cancel);
+
+  // Quand une carte est saisie, cliquer sur une autre carte la dépose ICI.
+  el.addEventListener('click',e=>{
+    if(window._grabCardId!==null){
+      e.stopPropagation(); e.preventDefault();
+      _dropReorder(cardId);        // insérer la carte saisie AVANT cardId
+    }
+  }, true);   // capture : passe avant le onclick de sélection
+}
+
+function _renderGrabState(){
+  // signaler visuellement la carte saisie + inviter à déposer
+  document.querySelectorAll('#hrows .card').forEach(el=>el.classList.remove('grabbed'));
+  if(window._grabCardId!==null){
+    const cards=[...document.querySelectorAll('#hrows .card')];
+    // on ne connaît pas l'index DOM->id ici ; on repère via render() plutôt.
+    setMsg(crT('Dépose la carte à l\'endroit voulu.'),'');
+  }
+  render();
+}
+
+function _dropReorder(targetId){
+  const grabbed=window._grabCardId;
+  window._grabCardId=null;
+  if(grabbed===null||grabbed===targetId){render();return;}
+  const p=G.players[G.cur];
+  const from=p.hand.findIndex(c=>c.id===grabbed);
+  let to=p.hand.findIndex(c=>c.id===targetId);
+  if(from<0||to<0){render();return;}
+  const [moved]=p.hand.splice(from,1);
+  to=p.hand.findIndex(c=>c.id===targetId);   // recalcul après splice
+  p.hand.splice(to,0,moved);                 // insérer AVANT la cible
+  G.sortBy=null;                             // l'ordre devient manuel
+  render(); broadcast();
+}
+
 function applySort(){
   const bv=getBV(),p=G.players[G.cur];
   const gIds=new Set(G.meldGroups.flat());
@@ -2526,6 +2608,8 @@ function render(){
         const s=G.selCard===c.id;
         const fn=inAct?()=>humanSelCard(c.id):null;
         const cel=mkCEl(c,bv,false,fn,s,!isMyTurn&&NET.mode==='host'?'dim nohov':null);
+        if(inAct)_attachLongPressReorder(cel,c.id);
+        if(window._grabCardId===c.id)cel.classList.add('grabbed');
         if(s&&goOk)cel.classList.add('cango');
         if(inAct)cel.style.boxShadow=`2px 3px 10px var(--sh),inset 0 0 0 1px ${curColor}22`;
         line.appendChild(cel);
@@ -3050,6 +3134,13 @@ function saveGameHistory(sorted){
 async function updateLeaderboard(sorted){
   if(!CUR_USER)return;
   try{
+    // Filet de sécurité : n'écrire au classement que si le compte possède bien
+    // son pseudo. Empêche un compte orphelin de créer une entrée en double.
+    if(!CUR_USER._pseudoOK){
+      const owner=await fbGet('pseudos/'+String(CUR_USER.pseudo||'').toLowerCase());
+      if(owner!==CUR_USER.uid){console.warn('Classement ignoré : pseudo non possédé');return;}
+      CUR_USER._pseudoOK=true;
+    }
     const myEntry=sorted.find(p=>p.name===CUR_USER.pseudo);
     if(!myEntry)return;
     const myScore=myEntry.totalScore;
@@ -3506,8 +3597,11 @@ function switchAuthTab(tab){
   document.getElementById('tab-register').classList.toggle('on', tab==='register');
   document.getElementById('auth-pseudo-row').style.display=tab==='register'?'block':'none';
   document.getElementById('auth-referral-row').style.display=tab==='register'?'block':'none';
-  document.getElementById('auth-btn').textContent=tab==='login'?'Se connecter':'Créer le compte';
+  document.getElementById('auth-btn').textContent=tab==='login'?crT('Se connecter'):crT('Créer le compte');
   document.getElementById('auth-err').textContent='';
+  // Le champ pseudo était seulement masqué : sa valeur survivait au changement
+  // d'onglet et devenait le pseudo du compte à la connexion. On le vide.
+  if(tab==='login'){const pi=document.getElementById('auth-pseudo');if(pi)pi.value='';}
   const fp=document.getElementById('forgot-pwd-link');
   if(fp)fp.style.display=tab==='login'?'block':'none';
 }
@@ -3552,14 +3646,23 @@ async function doAuth(){
   if(isReg&&pseudo.length<2){errEl.textContent='Pseudo trop court (min 2 caractères).';return;}
   const referralInput=document.getElementById('auth-referral')?.value.trim().toUpperCase()||'';
   document.getElementById('auth-btn').textContent='...';
+  // Le pseudo est vérifié AVANT la création du compte Auth. Sinon un pseudo déjà
+  // pris laissait derrière lui un compte Auth orphelin (sans noeud users/, sans
+  // réservation) qui pouvait ensuite écrire au classement -> doublons.
+  if(isReg){
+    try{
+      const dispo=await fbGet('pseudos/'+pseudo.toLowerCase());
+      if(dispo){errEl.textContent=crT('Ce pseudo est déjà pris.');document.getElementById('auth-btn').textContent=crT('Créer le compte');return;}
+    }catch(e){errEl.textContent=crT('Erreur réseau. Réessaie.');document.getElementById('auth-btn').textContent=crT('Créer le compte');return;}
+  }
   try{
     let url=isReg?`${AUTH_URL}:signUp?key=${FIREBASE_KEY}`:`${AUTH_URL}:signInWithPassword?key=${FIREBASE_KEY}`;
     const r=await fetch(url,{method:'POST',body:JSON.stringify({email,password:pwd,returnSecureToken:true}),headers:{'Content-Type':'application/json'}});
     const d=await r.json();
     if(d.error){errEl.textContent=translateAuthError(d.error.message);document.getElementById('auth-btn').textContent=isReg?'Créer le compte':'Se connecter';return;}
     if(isReg){
-      const taken=await fbGet('pseudos/'+pseudo.toLowerCase());
-      if(taken){errEl.textContent='Ce pseudo est déjà pris.';document.getElementById('auth-btn').textContent='Créer le compte';return;}
+      // Le compte Auth existe désormais : on écrit TOUJOURS le profil, même en cas
+      // de collision de dernière seconde, pour ne jamais laisser de compte orphelin.
       await fbSet('users/'+d.localId,{pseudo,email,created:Date.now()});
       await fbSet('pseudos/'+pseudo.toLowerCase(),d.localId);
       // Créer le code de parrainage
@@ -3571,6 +3674,7 @@ async function doAuth(){
     CUR_USER={uid:d.localId,email,pseudo:profile.pseudo||pseudo||email.split('@')[0],idToken:d.idToken,refreshToken:d.refreshToken,tokenExpiry:Date.now()+3600000,fcmToken:null};
     localStorage.setItem('cinqr_user',JSON.stringify({uid:d.localId,email,pseudo:CUR_USER.pseudo,refreshToken:d.refreshToken}));
     onUserLoggedIn();
+    ensureProfileComplete();
   }catch(e){errEl.textContent='Erreur réseau. Réessayez.';document.getElementById('auth-btn').textContent=isReg?'Créer le compte':'Se connecter';}
 }
 
@@ -4153,6 +4257,56 @@ async function updateFcmToken(token){
   await fbSet('users/'+CUR_USER.uid+'/fcmToken',token);
 }
 
+// ══ RÉPARATION DES COMPTES ORPHELINS ══
+// Un compte peut être authentifié sans posséder de profil complet (inscription
+// interrompue par un pseudo déjà pris). On lui fait CHOISIR un pseudo au lieu
+// d'en déduire un du champ resté rempli ou de l'adresse e-mail.
+async function ensureProfileComplete(){
+  if(!CUR_USER)return true;
+  try{
+    const prof=await fbGet('users/'+CUR_USER.uid)||{};
+    const owner=prof.pseudo?await fbGet('pseudos/'+String(prof.pseudo).toLowerCase()):null;
+    if(prof.pseudo&&owner===CUR_USER.uid){CUR_USER._pseudoOK=true;return true;}
+    openFixProfile(prof.pseudo||'');
+    return false;
+  }catch(e){return true;}          // réseau indisponible : ne pas bloquer le joueur
+}
+
+function openFixProfile(suggestion){
+  const m=document.getElementById('fixprofile-modal');
+  if(!m)return;
+  const inp=document.getElementById('fp-input');
+  if(inp)inp.value=suggestion||'';
+  const er=document.getElementById('fp-err');
+  if(er)er.textContent='';
+  m.style.display='flex';
+}
+
+async function saveFixProfile(){
+  if(!CUR_USER)return;
+  const errEl=document.getElementById('fp-err');
+  const p=document.getElementById('fp-input').value.trim();
+  errEl.textContent='';
+  if(!p||p.length<2){errEl.textContent=crT('Pseudo trop court (min 2 caractères).');return;}
+  try{
+    const taken=await fbGet('pseudos/'+p.toLowerCase());
+    if(taken&&taken!==CUR_USER.uid){errEl.textContent=crT('Ce pseudo est déjà pris.');return;}
+    await fbSet('users/'+CUR_USER.uid+'/pseudo',p);
+    if(CUR_USER.email)await fbSet('users/'+CUR_USER.uid+'/email',CUR_USER.email);
+    const cre=await fbGet('users/'+CUR_USER.uid+'/created');
+    if(!cre)await fbSet('users/'+CUR_USER.uid+'/created',Date.now());
+    await fbSet('pseudos/'+p.toLowerCase(),CUR_USER.uid);
+    // aligner l'entrée de classement si elle existe déjà
+    const lbE=await fbGet('leaderboard/'+CUR_USER.uid);
+    if(lbE)await fbSet('leaderboard/'+CUR_USER.uid+'/pseudo',p);
+    CUR_USER.pseudo=p;CUR_USER._pseudoOK=true;
+    const saved=JSON.parse(localStorage.getItem('cinqr_user')||'{}');
+    saved.pseudo=p;localStorage.setItem('cinqr_user',JSON.stringify(saved));
+    document.getElementById('fixprofile-modal').style.display='none';
+    onUserLoggedIn();
+  }catch(e){errEl.textContent=crT('Erreur réseau. Réessaie.');}
+}
+
 // Restaurer la session au chargement
 function tryRestoreSession(){
   const saved=localStorage.getItem('cinqr_user');
@@ -4161,6 +4315,7 @@ function tryRestoreSession(){
     const u=JSON.parse(saved);
     CUR_USER={uid:u.uid,email:u.email,pseudo:u.pseudo,idToken:null,refreshToken:u.refreshToken||null,tokenExpiry:0,fcmToken:null};
     onUserLoggedIn();
+    ensureProfileComplete();
     return true;
   }catch(e){localStorage.removeItem('cinqr_user');return false;}
 }
