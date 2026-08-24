@@ -636,6 +636,16 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
 .av-xs{width:20px;height:20px;font-size:.85rem}
 
 .card.grabbed{outline:3px solid var(--gold);outline-offset:2px;transform:translateY(-8px) scale(1.05);box-shadow:0 8px 24px rgba(0,0,0,.5)!important;z-index:20;opacity:.92}
+
+/* ── Tutoriel ── */
+.tuto-blocked{pointer-events:none!important;opacity:.4;filter:grayscale(.5);transition:opacity .2s}
+.tuto-halo{position:relative;outline:3px solid var(--gold);outline-offset:3px;border-radius:10px;animation:tutoPulse 1.4s infinite;z-index:60}
+.tuto-halo-big{position:relative;outline:5px solid var(--gold);outline-offset:5px;border-radius:12px;animation:tutoPulse .9s infinite;z-index:60;box-shadow:0 0 24px 6px rgba(212,175,55,.6)}
+@keyframes tutoPulse{0%,100%{outline-color:rgba(212,175,55,1)}50%{outline-color:rgba(212,175,55,.35)}}
+@keyframes tutoBounce{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+.tuto-bubble{outline:2px solid var(--gold);animation:tutoPulse 2s infinite}
+.tuto-clickable{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.tuto-clickable::after{content:' ▸';color:var(--gold)}
 </style>
 </head>
 <body>
@@ -857,6 +867,8 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
   <div style="width:100%;max-width:480px;margin:0 auto">
     <button class="back-btn" onclick="show('s-lobby')" style="margin-bottom:1.2rem">← Retour</button>
     <h2 style="font-family:'Cinzel',serif;color:var(--gold);font-size:1.4rem;text-align:center;margin-bottom:1.5rem">📖 Règles du jeu</h2>
+
+    <button class="gbtn" id="rules-tuto-btn" style="width:100%;padding:.7rem;margin-bottom:1.5rem;font-size:.95rem" onclick="startTutorial()">🎓 Lancer le tutoriel interactif</button>
 
     <div style="display:flex;flex-direction:column;gap:1rem">
 
@@ -1235,7 +1247,7 @@ function show(id){
   });
   // Rafraîchir la config locale à chaque ouverture pour injecter le pseudo connecté
   if(id==='s-local')buildLS();
-  if(id==='s-lobby')_refreshResumeBtn();
+  if(id==='s-lobby'){_refreshResumeBtn();maybeOfferTutorial();}
 }
 
 // ══ FORMAT DE PARTIE ══
@@ -1246,7 +1258,10 @@ const FORMATS=[{sr:1,lbl:'Complète',sub:'11 manches · 3→13 cartes'},
 let LS_START=1, NET_START=1;
 
 // Libellé de manche adapté au format : "Manche 2/8" en rapide, "Manche 2/11" en complète
-function roundLabel(r,sr){sr=sr||1;return `${crT('Manche')} ${r-sr+1}/${12-sr}`;}
+function roundLabel(r,sr){
+  if(window.TUTO&&TUTO.active){return `${crT('Leçon')} ${(TUTO.lesson||0)+1}/5`;}
+  sr=sr||1;return `${crT('Manche')} ${r-sr+1}/${12-sr}`;
+}
 
 function buildFmtRow(id,cur,setFn){
   const row=document.getElementById(id);if(!row)return;
@@ -1951,6 +1966,404 @@ function startLocal(){
   show('game');startGame(players,LS_START);
 }
 
+// ═══════════════════════════════════════════════════════════════════
+//  TUTORIEL — Brique A : injection de scénario déterministe
+//  Une manche de tuto = des mains fixées + une défausse + une pioche forcée,
+//  au lieu du mélange. Les ENSEIGNES sont permutées à chaque relance pour la
+//  rejouabilité, mais les RANGS et la structure des groupes restent identiques.
+// ═══════════════════════════════════════════════════════════════════
+window.TUTO = null;   // état du tuto quand une leçon est active (null sinon)
+
+// Permutation cohérente des 5 enseignes. On garde '★' à sa place d'atout visuel
+// n'est pas nécessaire : les rôles sont définis par rang, la couleur suit.
+function _tutoPermuteSuits(){
+  const base=['★','♥','♣','♠','♦'];
+  const shuffled=[...base];
+  for(let i=shuffled.length-1;i>0;i--){const j=0|Math.random()*(i+1);[shuffled[i],shuffled[j]]=[shuffled[j],shuffled[i]];}
+  const map={}; base.forEach((s,i)=>map[s]=shuffled[i]);
+  return map;   // ex : {'★':'♥','♥':'♦',...}
+}
+
+// Construit une carte de scénario. `spec` = [val, suitCode] où suitCode est
+// l'enseigne LOGIQUE ('★♥♣♠♦'), traduite par la permutation courante.
+// val 0 = joker.
+function _tutoCard(spec, perm){
+  const [val, suit]=spec;
+  if(val===0) return mkCard('J',0,true);
+  return mkCard(perm[suit]||suit, val);
+}
+
+// Injecte une manche de tuto dans G. `sc` = {round, hands:[[...],[...]], discard:[...], deckTop:[...]}
+// hands[0] = joueur humain, hands[1] = IA. deckTop = cartes forcées en haut de pioche.
+function tutoInjectRound(sc){
+  const perm=(TUTO&&TUTO.perm)||_tutoPermuteSuits();
+  if(TUTO) TUTO.perm=perm;
+  G.round=sc.round; G.startRound=sc.round;
+  G.discard=[]; G.goingOut=-1; G.lastTurns=new Set();
+  G.selCard=null; G.meldGroups=[]; G.sortBy=null;
+  G.exposedMelds=null; G.exposedBy=null; G.jokerCanTake=-1;
+  const bv=getBV(), nCards=G.round+2;
+  // mains fixées — tronquées au nombre de cartes de la manche pour éviter toute erreur
+  G.players.forEach((p,i)=>{
+    p.hand=(sc.hands[i]||[]).slice(0,nCards).map(spec=>_tutoCard(spec,perm));
+    p.roundScore=0;
+  });
+  // défausse visible
+  G.discard=(sc.discard||[]).map(spec=>_tutoCard(spec,perm));
+  // pioche : d'abord les cartes forcées, puis un deck neutre pour ne jamais manquer
+  const forced=(sc.deckTop||[]).map(spec=>_tutoCard(spec,perm));
+  const filler=createDeck();   // non mélangé : sert juste de réserve
+  G.deck=[...filler, ...forced];   // .pop() prend d'abord les forcées (fin du tableau)
+  G.cur=0;   // le joueur humain commence toujours en tuto
+  G.phase='draw';
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  TUTORIEL — Brique B : moteur d'étapes (halo, blocage, attente, rattrapage)
+//  Une étape = { bubble, target, block, await, validate, onDone }.
+//  L'overlay se ré-applique après chaque render() (comme l'i18n), car render()
+//  reconstruit la main et effacerait halo/blocage.
+// ═══════════════════════════════════════════════════════════════════
+
+// Sélecteurs des cibles nommées -> éléments réels du plateau.
+function _tutoResolve(target){
+  if(!target) return [];
+  // les valeurs peuvent être des fonctions (ids connus après injection) : on les évalue
+  const val=v=>typeof v==='function'?v():v;
+  target={ ...target };
+  if('card' in target)target.card=val(target.card);
+  if('cards' in target)target.cards=val(target.cards);
+  if('button' in target)target.button=val(target.button);
+  const map={
+    deck:   '#deck-pile',
+    discard:'#disc-pile',
+    hand:   '#hrows',
+    actions:'#abar',
+    bonus:  '#blbl',
+    scores: '#scorebar'
+  };
+  if(target.card!=null){   // une carte précise de la main, par id
+    const el=document.querySelector(`#hrows .card[data-cardid="${target.card}"]`);
+    return el?[el]:[];
+  }
+  if(target.cards){        // plusieurs cartes
+    return target.cards.map(id=>document.querySelector(`#hrows .card[data-cardid="${id}"]`)).filter(Boolean);
+  }
+  if(target.button){       // un bouton d'action par son texte (via crT)
+    return [...document.querySelectorAll('#abar button')].filter(b=>b.textContent.includes(target.button));
+  }
+  if(target.zone && map[target.zone]){
+    const el=document.querySelector(map[target.zone]);
+    return el?[el]:[];
+  }
+  return [];
+}
+
+// Applique halo + blocage pour l'étape courante. Idempotent : réappelé après render().
+function tutoApplyOverlay(){
+  if(!TUTO||!TUTO.active) return;
+  const step=TUTO.steps[TUTO.i];
+  if(!step) return;
+  // nettoyage
+  document.querySelectorAll('.tuto-halo').forEach(e=>e.classList.remove('tuto-halo','tuto-halo-big'));
+  document.querySelectorAll('.tuto-blocked').forEach(e=>e.classList.remove('tuto-blocked'));
+  document.getElementById('tuto-arrow')?.remove();
+
+  // 1) bloquer TOUT le plateau interactif...
+  if(step.block!==false){
+    ['#deck-pile','#disc-pile','#hrows','#abar'].forEach(sel=>{
+      const el=document.querySelector(sel); if(el)el.classList.add('tuto-blocked');
+    });
+  }
+  // 2) ...puis dé-bloquer + halo sur les cibles autorisées
+  const targets=[];
+  (step.allow?Array.isArray(step.allow)?step.allow:[step.allow]:[]).forEach(t=>_tutoResolve(t).forEach(el=>targets.push(el)));
+  const haloTargets=step.target?_tutoResolve(step.target):targets;
+  targets.forEach(el=>{
+    el.classList.remove('tuto-blocked');
+    // remonter le blocage du conteneur parent si la cible est une carte
+    let par=el.closest('#hrows,#abar'); if(par)par.classList.remove('tuto-blocked');
+  });
+  haloTargets.forEach(el=>el.classList.add(TUTO.big?'tuto-halo-big':'tuto-halo'));
+
+  // 3) bulle
+  const mb=document.getElementById('msgb');
+  if(mb&&step.bubble){ mb.textContent=step.bubble(); mb.className='msgb tuto-bubble'; }
+  // 4) ré-installer le clic d'avance pour les étapes next/done (render l'efface)
+  if(mb&&(step.next||step.done)){
+    mb.classList.add('tuto-clickable');
+    mb.onclick=()=>{ mb.onclick=null; if(step.done)tutoEndLesson(); else tutoNext(); };
+  }
+}
+
+// Passe à l'étape suivante (ou termine la manche/leçon).
+function tutoNext(){
+  if(!TUTO)return;
+  clearTimeout(TUTO._rescueT1); clearTimeout(TUTO._rescueT2);
+  TUTO.big=false;
+  const cur=TUTO.steps[TUTO.i];
+  if(cur&&cur.onDone) try{cur.onDone();}catch(e){}
+  TUTO.i++;
+  if(TUTO.i>=TUTO.steps.length){ return tutoEndLesson(); }
+  tutoRenderStep();
+}
+
+function tutoRenderStep(){
+  if(!TUTO)return;
+  const step=TUTO.steps[TUTO.i];
+  if(!step)return;
+  if(step.enter) try{step.enter();}catch(e){}
+  render();               // reconstruit le plateau...
+  tutoApplyOverlay();     // ...puis on ré-applique halo/blocage
+  _tutoArmRescue(step);
+  // étape "bouton Suivant" ou "fin de manche" : message cliquable pour avancer
+  if(step.next||step.done){
+    const mb=document.getElementById('msgb');
+    if(mb){ mb.classList.add('tuto-clickable'); mb.onclick=()=>{ mb.onclick=null;
+      if(step.done){ tutoEndLesson(); } else { tutoNext(); }
+    }; }
+  }
+}
+
+// Rattrapage : halo agrandi après 4 s, flèche après 8 s.
+function _tutoArmRescue(step){
+  TUTO._rescueT1=setTimeout(()=>{ TUTO.big=true; tutoApplyOverlay(); }, 4000);
+  TUTO._rescueT2=setTimeout(()=>{
+    const t=_tutoResolve(step.target||(step.allow&&(Array.isArray(step.allow)?step.allow[0]:step.allow)));
+    if(t&&t[0])_tutoArrow(t[0]);
+  }, 8000);
+}
+
+function _tutoArrow(el){
+  document.getElementById('tuto-arrow')?.remove();
+  const a=document.createElement('div'); a.id='tuto-arrow'; a.textContent='👆';
+  const r=el.getBoundingClientRect();
+  a.style.cssText=`position:fixed;left:${r.left+r.width/2-12}px;top:${r.top-34}px;font-size:26px;z-index:900;animation:tutoBounce .8s infinite;pointer-events:none`;
+  document.body.appendChild(a);
+}
+
+// Appelé par le jeu quand le joueur agit (pioche, sélection, défausse, abat).
+// Si l'étape courante attend cette action ET que sa validation passe, on avance.
+function tutoOnAction(kind, payload){
+  if(!TUTO||!TUTO.active)return false;
+  const step=TUTO.steps[TUTO.i];
+  if(!step||!step.await)return false;
+  if(step.await!==kind)return false;
+  if(step.validate && !step.validate(payload))return false;
+  tutoNext();
+  return true;
+}
+
+function tutoEndLesson(){
+  // fin d'une manche : soit on enchaîne la manche suivante, soit on termine le tuto
+  const done=TUTO.onLessonDone;
+  if(done){ done(); } else { tutoQuit(); }
+}
+
+function tutoQuit(){
+  clearTimeout(TUTO&&TUTO._rescueT1); clearTimeout(TUTO&&TUTO._rescueT2);
+  document.querySelectorAll('.tuto-halo,.tuto-halo-big').forEach(e=>e.classList.remove('tuto-halo','tuto-halo-big'));
+  document.querySelectorAll('.tuto-blocked').forEach(e=>e.classList.remove('tuto-blocked'));
+  document.getElementById('tuto-arrow')?.remove();
+  const mb=document.getElementById('msgb'); if(mb){mb.classList.remove('tuto-bubble','tuto-clickable');mb.onclick=null;}
+  TUTO=null;
+  show('s-lobby');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+//  TUTORIEL — Brique C : scénarios des 5 manches + orchestrateur
+// ═══════════════════════════════════════════════════════════════════
+
+// Petit helper : id de la carte de la main du joueur correspondant à [val,suitLogique].
+function _tid(val, suitLogique){
+  const perm=TUTO.perm, suit=(val===0)?null:(perm[suitLogique]||suitLogique);
+  const c=G.players[0].hand.find(x=> val===0 ? x.joker : (x.val===val && x.suit===suit));
+  return c?c.id:null;
+}
+// Représentation texte d'une carte pour les bulles (rang + enseigne réelle, figure via dv()).
+function _tc(val, suitLogique){
+  const perm=TUTO.perm, suit=perm[suitLogique]||suitLogique;
+  return dv(val)+suit;
+}
+
+// Construit les étapes d'une manche. Chaque manche est une fonction car les ids
+// de cartes ne sont connus qu'APRÈS l'injection (permutation appliquée).
+const TUTO_SCENARIOS = {
+
+  // ── MANCHE 3 : premier groupe + l'atout ──
+  3(){ return {
+    round:1,
+    hands:[[[9,'♥'],[9,'♠'],[7,'♦']],[[4,'★'],[8,'♣'],[10,'♦'],[3,'♠'],[13,'♥']]],
+    discard:[[11,'♣']], deckTop:[[9,'♣']],
+    steps:[
+      {next:true, bubble:()=>crT("Bienvenue ! Quelques manches pour apprendre. Ici, 3 cartes : regroupe-les avant l'adversaire.")},
+      {next:true, target:{zone:'bonus'}, bubble:()=>crT("Cette pastille montre l'atout du tour : ce sont les 3. Il change à chaque manche.")},
+      {await:'drawDeck', target:{zone:'deck'}, allow:{zone:'deck'},
+       bubble:()=>crT("Le Valet de la défausse ne t'aide pas. Pioche une carte.")},
+      {next:true, bubble:()=>crT("Tu as trois 9 : une famille ! Le jeu la reconnaît tout seul. Regarde : « Abattre » s'est allumé.")},
+      {await:'select', target:{card:()=>_tid(7,'♦')}, allow:{card:()=>_tid(7,'♦')},
+       validate:(cid)=>{const c=G.players[0].hand.find(x=>x.id===cid);return c&&c.val===7;},
+       bubble:()=>crT("Sélectionne le 7, isolé.")},
+      {await:'goout', target:{button:crT('Abattre')}, allow:{button:crT('Abattre')},
+       bubble:()=>crT("Maintenant touche « Abattre » pour finir avec une main vide.")},
+      {done:true, bubble:()=>crT("Bravo, première manche gagnée ! Tu n'as rien assemblé : range tes cartes, le jeu voit tes groupes.")}
+    ]
+  }},
+
+  // ── MANCHE 4 : la suite + choix pioche/défausse ──
+  4(){ return {
+    round:2,
+    hands:[[[6,'♠'],[7,'♠'],[9,'♠'],[3,'♥']],[[3,'★'],[5,'♦'],[11,'♣'],[13,'♠']]],
+    discard:[[8,'♠']], deckTop:[[12,'♥']],
+    steps:[
+      {next:true, bubble:()=>crT("Atout aux 4. À chaque tour tu choisis : piocher au hasard, ou prendre la carte visible de la défausse.")},
+      {await:'drawDiscard', target:{zone:'discard'}, allow:{zone:'discard'},
+       bubble:()=>crT("Le 8 complète tes cartes de la même couleur en une suite. Prends-le sur la défausse.")},
+      {next:true, bubble:()=>crT("Astuce : maintiens une carte appuyée pour la déplacer et ranger ta suite côte à côte. Essaie, puis continue.")},
+      {next:true, bubble:()=>crT("Quatre cartes qui se suivent, même couleur : une suite. « Abattre » s'allume.")},
+      {await:'select', target:{card:()=>_tid(3,'♥')}, allow:{card:()=>_tid(3,'♥')},
+       validate:(cid)=>{const c=G.players[0].hand.find(x=>x.id===cid);return c&&c.val===3&&c.suit===(TUTO.perm['♥']||'♥');},
+       bubble:()=>crT("Le 3 est isolé. Sélectionne-le.")},
+      {await:'goout', target:{button:crT('Abattre')}, allow:{button:crT('Abattre')},
+       bubble:()=>crT("Puis abats.")},
+      {done:true, bubble:()=>crT("Une suite : même couleur qui se suit. Voyons une famille de plus près.")}
+    ]
+  }},
+
+  // ── MANCHE 5 : la famille + « tout doit être casé » (pas d'abat) ──
+  5(){ return {
+    round:3,
+    hands:[[[10,'♥'],[10,'♣'],[10,'♦'],[4,'♠'],[5,'♣']],[[3,'★'],[6,'♦'],[8,'♠'],[11,'♥'],[13,'♣']]],
+    discard:[[13,'♥']], deckTop:[[13,'♦']],
+    blockDiscard:true,
+    steps:[
+      {next:true, target:{cards:()=>[_tid(10,'♥'),_tid(10,'♣'),_tid(10,'♦')]},
+       bubble:()=>crT("Atout aux 5. Tu as trois 10 : une belle famille. Mais attention — pour finir une manche, il faut caser TOUTES ses cartes, pas juste une.")},
+      {next:true, target:{cards:()=>[_tid(4,'♠'),_tid(5,'♣')]},
+       bubble:()=>crT("Regarde : ces deux cartes-là restent seules, hors de la famille. Tant qu'elles ne forment pas un groupe, tu ne peux pas abattre.")},
+      {await:'drawDeck', target:{zone:'deck'}, allow:{zone:'deck'}, block:true,
+       bubble:()=>crT("Même prendre la carte du dessus ne t'aiderait pas : il te resterait toujours deux cartes seules. Pioche pour voir.")},
+      {done:true, bubble:()=>crT("« Abattre » reste éteint : ta famille est là, mais deux cartes traînent encore. On ne gagne que si TOUT est casé. La prochaine leçon montre comment y arriver.")}
+    ]
+  }},
+
+  // ── MANCHE 6 : deux groupes dans une main + note appui long ──
+  6(){ return {
+    round:4,
+    hands:[[[7,'♥'],[8,'♥'],[9,'♥'],[12,'♠'],[12,'♦'],[3,'♣']],[[4,'★'],[5,'♦'],[8,'♠'],[10,'♥'],[11,'♣'],[13,'♦']]],
+    discard:[[3,'♠']], deckTop:[[12,'♥']],
+    steps:[
+      {next:true, bubble:()=>crT("Atout aux 6. Ta main cache deux groupes à la fois : une suite et une famille. On pioche pour compléter.")},
+      {await:'drawDeck', target:{zone:'deck'}, allow:{zone:'deck'},
+       bubble:()=>crT("Pioche.")},
+      {next:true, bubble:()=>crT("Astuce : maintiens une carte appuyée pour la déplacer et ranger ta main. Ça n'change rien au jeu, mais ça aide à voir tes groupes.")},
+      {next:true, target:{button:crT('Abattre')},
+       bubble:()=>crT("Une suite ET une famille : le jeu voit les deux, « Abattre » s'allume.")},
+      {await:'select', target:{card:()=>_tid(3,'♣')}, allow:{card:()=>_tid(3,'♣')},
+       validate:(cid)=>{const c=G.players[0].hand.find(x=>x.id===cid);return c&&c.val===3;},
+       bubble:()=>crT("Il ne reste que le 3. Sélectionne-le.")},
+      {await:'goout', target:{button:crT('Abattre')}, allow:{button:crT('Abattre')},
+       bubble:()=>crT("Et abats !")},
+      {done:true, bubble:()=>crT("Bravo ! Deux groupes dans une main, c'est la clé. Dernière leçon : une fin de partie que tu crois perdue…")}
+    ]
+  }},
+
+  // ── MANCHE 13 : le final semi-libre ──
+  13(){ return {
+    round:11,
+    hands:[
+      [[4,'♥'],[5,'♥'],[5,'♣'],[5,'♠'],[5,'♦'],[4,'★'],[5,'★'],[6,'★'],[7,'♦'],[8,'♦'],[9,'♦'],[10,'♦'],[8,'♠']],
+      [[3,'★'],[6,'♣'],[9,'♠'],[9,'♣'],[11,'♥'],[12,'♠'],[13,'♣'],[7,'♥'],[10,'♠'],[4,'♦'],[6,'♥'],[8,'♣'],[3,'♦']]
+    ],
+    discard:[[3,'♥']], deckTop:[],
+    aiScore:40, myScore:120,   // mise en scène « je perds »
+    steps:[
+      {next:true, target:{zone:'scores'},
+       bubble:()=>crT("Dernière manche, atout = Roi. L'adversaire mène et va abattre. Ta main semble perdue… regardons mieux.")},
+      {next:true, target:{cards:()=>[_tid(5,'♥'),_tid(5,'♣'),_tid(5,'♠'),_tid(5,'♦')]},
+       bubble:()=>crT("Réflexe : « quatre 5, belle famille ». Mais ça laisse trop de cartes seules. Il y a mieux.")},
+      {await:'drawDiscard', target:{zone:'discard'}, allow:{zone:'discard'},
+       bubble:()=>crT("Prends le 3 sur la défausse. Une seule carte va tout changer.")},
+      {next:true, bubble:()=>crT("Le 3 forme une suite avec ton 4 et ton 5. Ce 5 quitte la bande des 5 — et les trois autres 5 forment enfin une vraie famille. Une carte pouvait servir à deux endroits.")},
+      {next:true, target:{button:crT('Abattre')},
+       bubble:()=>crT("Le jeu voit tout : deux suites, une famille. Presque tout est casé…")},
+      // choix semi-libre : le joueur pioche le 2, il reste 7♦ (utile) et 2♣ (déchet)
+      {await:'select',
+       allow:[{card:()=>_tid(7,'♦')},{card:()=>_tid(2,'♣')}],
+       validate:(cid)=>{const c=G.players[0].hand.find(x=>x.id===cid);
+         if(c&&c.val===8&&c.suit===(TUTO.perm['♠']||'♠'))return true;   // sélectionne le déchet 8♠ = bon
+         setMsg(crT("Presque ! Celle-ci complétait ta suite. Réessaie."),'alert');return false;},
+       bubble:()=>crT("À toi de finir. Sélectionne la carte qui ne sert à rien. Laquelle jettes-tu ?")},
+      {await:'goout', target:{button:crT('Abattre')}, allow:{button:crT('Abattre')},
+       bubble:()=>crT("Parfait — abats pour gagner !")},
+      {done:true, bubble:()=>crT("Tu as gagné — et tu l'as fait toi-même. C'est ça, 5 Rois : voir ce que les autres ne voient pas. À toi de jouer, pour de vrai !")}
+    ]
+  }},
+
+};
+
+const TUTO_ORDER=[3,4,5,6,13];
+
+function startTutorial(){
+  // Activer le tuto AVANT startGame : sinon le render() de startGame croit être en
+  // partie normale et déclenche l'astuce d'appui long (que le tuto enseigne déjà).
+  window.TUTO={active:true, perm:_tutoPermuteSuits(), lesson:0, i:0, big:false,
+    onLessonDone:_tutoAdvanceLesson};
+  startGame([{name:crT('Toi'),isHuman:true,color:pc(0),avatar:_myAvatar||'🦊'},
+             {name:crT('IA'),isHuman:false,color:pc(1),avatar:'👑'}], 1);
+  _tutoLoadLesson(0);
+}
+
+function _tutoLoadLesson(idx){
+  TUTO.lesson=idx; TUTO.i=0;
+  const round=TUTO_ORDER[idx];
+  const sc=TUTO_SCENARIOS[round]();
+  TUTO.steps=sc.steps;
+  // mémoriser une éventuelle mise en scène de score (manche 13)
+  tutoInjectRound(sc);
+  if(sc.myScore!=null){G.players[0].totalScore=sc.myScore;}
+  if(sc.aiScore!=null){G.players[1].totalScore=sc.aiScore;}
+  G.phase='draw';
+  tutoRenderStep();
+}
+
+function _tutoAdvanceLesson(){
+  const next=TUTO.lesson+1;
+  if(next>=TUTO_ORDER.length){ _tutoFinish(); return; }
+  // petite transition puis manche suivante
+  _tutoLoadLesson(next);
+}
+
+function _tutoFinish(){
+  try{ localStorage.setItem('cr_tuto_done','1'); }catch(e){}
+  tutoQuit();          // nettoie l'overlay et revient au lobby
+  // proposer une vraie partie
+  setTimeout(()=>{ try{ show('s-local'); }catch(e){} }, 200);
+}
+
+// Proposer le tuto au tout premier lancement (une seule fois).
+function maybeOfferTutorial(){
+  let done=false; try{done=localStorage.getItem('cr_tuto_done')==='1';}catch(e){}
+  if(done) return;
+  // Ne pas proposer le tuto à un joueur qui a DÉJÀ joué (historique non vide) :
+  // il connaît le jeu, l'offre serait agaçante. Il reste accessible via les Règles.
+  try{ if(getGameHistory().length>0) return; }catch(e){}
+  // petit délai pour laisser le lobby s'afficher
+  setTimeout(()=>{
+    if(document.getElementById('tuto-offer'))return;
+    const d=document.createElement('div'); d.id='tuto-offer';
+    d.style.cssText='position:fixed;inset:0;z-index:750;background:rgba(0,0,0,.82);display:flex;align-items:center;justify-content:center;padding:1.5rem';
+    d.innerHTML=`<div style="background:var(--card-bg,#0d3b1e);border:1px solid var(--gold);border-radius:16px;padding:1.4rem;max-width:340px;text-align:center">
+      <div style="font-family:Cinzel,serif;color:var(--gold);font-size:1.15rem;margin-bottom:.6rem">${crT('Première partie ?')}</div>
+      <div style="font-size:.85rem;color:var(--text-muted);line-height:1.5;margin-bottom:1rem">${crT('Apprends à jouer en 5 manches guidées. Ça prend deux minutes.')}</div>
+      <button class="gbtn" style="width:100%;padding:.6rem;margin-bottom:.5rem" onclick="document.getElementById('tuto-offer').remove();startTutorial()">${crT('Commencer le tuto')}</button>
+      <button class="lbtn" style="width:100%;padding:.5rem;font-size:.85rem" onclick="document.getElementById('tuto-offer').remove();try{localStorage.setItem('cr_tuto_done','1')}catch(e){}">${crT('Plus tard')}</button>
+    </div>`;
+    document.body.appendChild(d);
+  }, 600);
+}
+
 function startGame(playersConfig,firstRound){
   _clearSave();
   const _sr=firstRound||1;   // 1 = partie complète, 4 = partie rapide
@@ -1965,6 +2378,9 @@ function startGame(playersConfig,firstRound){
 }
 
 function startRound(){
+  // Pendant le tutoriel, on n'utilise jamais la distribution aléatoire :
+  // c'est tutoInjectRound qui met en place la manche. On sort immédiatement.
+  if(window.TUTO&&TUTO.active){ return; }
   const deck=createDeck();shuffle(deck);
   G.deck=deck;G.discard=[];G.goingOut=-1;G.lastTurns=new Set();
   G.selCard=null;G.meldGroups=[];G.sortBy=null;G.exposedMelds=null;G.exposedBy=null;G.jokerCanTake=-1;
@@ -2043,6 +2459,9 @@ function endRound(){
   G.phase='round_end';
   for(let i=0;i<G.players.length;i++){const p=G.players[i];if(i===G.goingOut)p.roundScore=0;p.totalScore+=p.roundScore;}
   document.getElementById('cover').classList.remove('on');
+  // Pendant le tutoriel : pas de popup ni de redistribution. Le moteur de tuto
+  // affiche son message de victoire (étape 'done') et enchaîne la leçon suivante.
+  if(window.TUTO&&TUTO.active){ render(); return; }
   render();broadcast();showRoundPopup();
   _saveGame();
 }
@@ -2157,7 +2576,7 @@ function isMyHostTurn(){return G.players[G.cur].isHuman&&(NET.mode!=='host'||G.c
 function onDeckClick(){if(G.phase==='draw'&&isMyHostTurn())humanDrawDeck()}
 function onDiscClick(){if(G.phase==='draw'&&isMyHostTurn())humanDrawDiscard()}
 
-function humanDrawDeck(){
+function humanDrawDeck(){if(window.TUTO&&TUTO.active){if(!tutoOnAction('drawDeck'))return;}
   if(G.phase!=='draw')return;
   _snapBeforeDraw();
   playDrawSound();
@@ -2168,7 +2587,7 @@ function humanDrawDeck(){
   if(NET.mode)_startTurnTimer();
   _saveGame();
 }
-function humanDrawDiscard(){
+function humanDrawDiscard(){if(window.TUTO&&TUTO.active){if(!tutoOnAction('drawDiscard'))return;}
   if(G.phase!=='draw'||!G.discard.length)return;
   const top=G.discard[G.discard.length-1];
   // Règle du Joker : seul le joueur suivant peut le prendre
@@ -2185,7 +2604,7 @@ function humanDrawDiscard(){
   if(NET.mode)_startTurnTimer();
   _saveGame();
 }
-function humanSelCard(cid){if(G.phase!=='act')return;G.selCard=G.selCard===cid?null:cid;render()}
+function humanSelCard(cid){if(window.TUTO&&TUTO.active){if(!tutoOnAction('select',cid))return;}if(G.phase!=='act')return;G.selCard=G.selCard===cid?null:cid;render()}
 function humanToGrp(gIdx){const gIds=new Set(G.meldGroups.flat());if(G.selCard===null||gIds.has(G.selCard))return;if(gIdx===-1)G.meldGroups.push([G.selCard]);else G.meldGroups[gIdx].push(G.selCard);G.selCard=null;render()}
 function humanFrGrp(cid,gi){G.meldGroups[gi]=G.meldGroups[gi].filter(id=>id!==cid);if(!G.meldGroups[gi].length)G.meldGroups.splice(gi,1);render()}
 function humanDelGrp(gi){G.meldGroups.splice(gi,1);render()}
@@ -2268,7 +2687,7 @@ function applySort(){
   else if(G.sortBy==='val')inH.sort((a,b)=>isWild(a,bv)!==isWild(b,bv)?(isWild(a,bv)?1:-1):a.val-b.val||(SORD[a.suit]-SORD[b.suit]));
   p.hand=[...inH,...inG];render();broadcast();
 }
-function humanDiscard(){
+function humanDiscard(){if(window.TUTO&&TUTO.active){if(!tutoOnAction('discard',G.selCard))return;}
   const gIds=new Set(G.meldGroups.flat());
   if(G.selCard===null){setMsg('Sélectionne d\'abord une carte à défausser.','alert');render();return}
   if(gIds.has(G.selCard)){setMsg('Remets la carte en main avant de la défausser.','alert');render();return}
@@ -2283,11 +2702,12 @@ function humanDiscard(){
   else{G.jokerCanTake=-1;}
   if(G.goingOut!==-1){const{score}=bestMelds(p.hand,bv);p.roundScore=score;setMsg(`${crT('Défausse')} ${card.joker?crT('Joker'):dv(card.val)+card.suit}. ${crT('Pénalité:')} ${score} pts.`,'');G.lastTurns.add(G.cur);}
   else setMsg(`${crT('Tu défausses ')}${card.joker?crT('Joker'):dv(card.val)+card.suit}.`,'');
-  G.selCard=null;G.meldGroups=[];render();broadcast();
+  G.selCard=null;G.meldGroups=[];render();
   playDiscardSound();_stopTurnTimer();
-  setTimeout(advance,600);
+  if(window.TUTO&&TUTO.active)return;   // en tuto, pas d'avance automatique du tour
+  broadcast();setTimeout(advance,600);
 }
-function humanGoOut(){
+function humanGoOut(){if(window.TUTO&&TUTO.active){if(!tutoOnAction('goout'))return;}
   const gIds=new Set(G.meldGroups.flat());
   if(G.selCard===null){setMsg('Sélectionne la carte à défausser.','alert');render();return}
   if(gIds.has(G.selCard)){setMsg('La carte à défausser doit être en main.','alert');render();return}
@@ -2303,7 +2723,12 @@ function humanGoOut(){
   G.selCard=null;G.meldGroups=[];G.exposedMelds=fm;G.exposedBy=G.cur;flashMelds(fm,bv);
   setMsg(`${p.name} ${crT('ABAT ! 🎉 Les autres ont un dernier tour.')}`,'success');
   playGoOutSound();_stopTurnTimer();
-  render();broadcast();setTimeout(()=>{advance();setTimeout(broadcast,300);},800);
+  render();
+  // En tuto, on n'enchaîne PAS la mécanique normale de manche : le moteur de tuto
+  // pilote la transition (étape 'done' -> manche suivante). Sinon startRound()
+  // redistribuerait une main aléatoire par-dessus le scénario.
+  if(window.TUTO&&TUTO.active)return;
+  broadcast();setTimeout(()=>{advance();setTimeout(broadcast,300);},800);
 }
 function checkGoOut(){
   if(G.selCard===null||G.phase!=='act')return false;
@@ -2453,6 +2878,7 @@ function mkCEl(c,bv,small,clickFn,selected,extra){
   const el=document.createElement('div');const wild=isWild(c,bv);
   el.className='card'+(small?' sm':'')+(c.joker?' joker':wild?' wild':'')+(selected?' sel':'')+(extra?' '+extra:'');
   if(clickFn)el.onclick=clickFn;
+  if(c&&c.id!=null)el.dataset.cardid=c.id;   // pour le ciblage du tutoriel
   if(c.joker){
     const jc=_customColors.joker||'#b8860b';
     el.innerHTML=`<div class="cc"><div class="cv" style="color:${jc}">J</div><div class="cs">🃏</div></div><div class="cm">🃏</div><div class="cc bot"><div class="cv" style="color:${jc}">J</div><div class="cs">🃏</div></div>`;
@@ -2476,6 +2902,32 @@ function flashMelds(melds,bv){
 // ═══════════════════════════════════════════
 // RENDER HOST
 // ═══════════════════════════════════════════
+function maybeShowReorderTip(){
+  // Astuce affichée UNE seule fois, en partie normale (pas en tuto), quand le
+  // joueur a une main à réorganiser. Informe de l'appui long pour déplacer les cartes.
+  if(window.TUTO&&TUTO.active)return;                 // le tuto l'enseigne déjà
+  let seen=false; try{seen=localStorage.getItem('cr_reorder_tip')==='1';}catch(e){}
+  if(seen)return;
+  const myP = NET.mode==='host'?G.players[0]:(G.players[G.cur]&&G.players[G.cur].isHuman?G.players[G.cur]:null);
+  if(!myP||!myP.hand||myP.hand.length<2)return;       // besoin d'au moins 2 cartes
+  if(document.getElementById('reorder-tip'))return;   // déjà affichée dans cette session
+  try{localStorage.setItem('cr_reorder_tip','1');}catch(e){}
+
+  const tip=document.createElement('div');
+  tip.id='reorder-tip';
+  tip.style.cssText='position:fixed;left:50%;transform:translateX(-50%);bottom:16%;z-index:600;'+
+    'max-width:300px;background:var(--card-bg,#0d3b1e);border:1.5px solid var(--gold);border-radius:12px;'+
+    'padding:.7rem .9rem;box-shadow:0 6px 24px rgba(0,0,0,.5);text-align:center;'+
+    'font-size:.82rem;color:var(--text,#eee);line-height:1.45;cursor:pointer;animation:tutoPulse 2s infinite';
+  tip.innerHTML='<div style="font-size:1.3rem;margin-bottom:.3rem">👆✋</div>'+
+    '<div>'+crT("Astuce : maintiens une carte appuyée pour la déplacer et ranger ta main comme tu veux.")+'</div>'+
+    '<div style="margin-top:.5rem;font-size:.72rem;color:var(--gold)">'+crT("Touche pour fermer")+'</div>';
+  tip.onclick=()=>tip.remove();
+  document.body.appendChild(tip);
+  // se ferme automatiquement après 7 s si le joueur ne la touche pas
+  setTimeout(()=>{document.getElementById('reorder-tip')?.remove();},7000);
+}
+
 function render(){
   if(NET.mode==='guest'){renderGuest();return}
   if(!G)return;
@@ -2556,20 +3008,9 @@ function render(){
 
   // Meld zone
   const mzEl=document.getElementById('mz');const mgEl=document.getElementById('mzgroups');const mtEl=document.getElementById('mztools');
-  if(inAct){
-    mzEl.style.display='flex';mgEl.innerHTML='';mtEl.innerHTML='';
-    G.meldGroups.forEach((gIds2,gi)=>{
-      const gCards=gIds2.map(id=>myP.hand.find(c=>c.id===id)).filter(Boolean);
-      const cls=meldCls(gCards,bv);const canDrop=G.selCard!==null&&!gIds.has(G.selCard);
-      const row=document.createElement('div');row.className='mgr '+cls+(canDrop?' drop':'');
-      row.onclick=e=>{if(!e.target.classList.contains('mgdel')&&canDrop)humanToGrp(gi)};
-      const b=document.createElement('div');b.className='mgbdg '+(cls||'empty');b.textContent=meldLbl(gCards,bv);row.appendChild(b);
-      gCards.forEach(c=>{const cel=mkCEl(c,bv,false,null,false,'nohov');cel.style.cursor='pointer';cel.title='Clic → remettre en main';cel.onclick=e=>{e.stopPropagation();humanFrGrp(c.id,gi)};row.appendChild(cel)});
-      const del=document.createElement('div');del.className='mgdel';del.textContent='×';del.onclick=e=>{e.stopPropagation();humanDelGrp(gi)};row.appendChild(del);mgEl.appendChild(row);
-    });
-    if(!G.meldGroups.length){const h=document.createElement('div');h.className='mzhint';h.textContent='Sélectionne une carte, puis "+ Nouveau pli" pour organiser tes combinaisons';mgEl.appendChild(h)}
-    if(G.selCard!==null&&!gIds.has(G.selCard)){const nb=document.createElement('button');nb.className='bsm gold';nb.textContent='+ Nouveau pli';nb.onclick=()=>humanToGrp(-1);mtEl.appendChild(nb)}
-  }else if(G.goingOut===-1)mzEl.style.display='none';
+  // Interface de plis retirée : groupes détectés automatiquement (partMelds).
+  // La zone ne s'affiche plus qu'à l'abat (flashMelds).
+  if(G.goingOut===-1)mzEl.style.display='none';
 
   // Hand label
   const hl=document.getElementById('hlbl');
@@ -2577,7 +3018,7 @@ function render(){
   if(G.phase==='cover')hl.textContent='Main cachée';
   else if(!myP)hl.textContent='';
   else if(isMyTurn&&G.phase==='draw')hl.textContent=`${crT('Main de')} ${myP.name}`;
-  else if(inAct)hl.textContent=G.selCard?'Sélectionnée — défausse, abat ou mets dans un pli':'Sélectionne la carte à défausser';
+  else if(inAct)hl.textContent=G.selCard?crT('Sélectionnée — défausse ou abats'):crT('Sélectionne la carte à défausser');
   else if(NET.mode==='host')hl.textContent=`Ta main — ${myP.name}`;
   else hl.textContent=myP.name;
   hl.style.color=curColor+'88';
@@ -2653,6 +3094,8 @@ function render(){
   }else if(NET.mode==='host'&&G.cur!==0&&G.players[G.cur].isHuman){
     const h=document.createElement('span');h.style.cssText='color:rgba(255,255,255,.33);font-size:.76rem;font-style:italic';h.textContent=`⏳ En attente de ${G.players[G.cur].name}…`;ab.appendChild(h);
   }else if(G.phase==='ai_turn'){const h=document.createElement('span');h.style.cssText='color:rgba(255,255,255,.33);font-size:.76rem;font-style:italic';h.textContent='⏳ L\'IA joue…';ab.appendChild(h)}
+  if(window.TUTO&&TUTO.active){try{tutoApplyOverlay();}catch(e){}}  // ré-applique l'overlay du tuto
+  else if(G.phase==='act'||G.phase==='draw'){try{maybeShowReorderTip();}catch(e){}}
 }
 
 // ═══════════════════════════════════════════
@@ -2730,19 +3173,9 @@ function renderGuest(){
 
   // Meld zone
   const mzEl=document.getElementById('mz');const mgEl=document.getElementById('mzgroups');const mtEl=document.getElementById('mztools');
+  // Interface de plis retirée côté invité (groupes détectés via partMelds).
   if(inAct){
-    mzEl.style.display='flex';mgEl.innerHTML='';mtEl.innerHTML='';
-    GSL.meldGroups.forEach((gIds2,gi)=>{
-      const gCards=gIds2.map(id=>GS.myHand.find(c=>c.id===id)).filter(Boolean);
-      const cls=meldCls(gCards,bv);const canDrop=GSL.selCard!==null&&!gIds.has(GSL.selCard);
-      const row=document.createElement('div');row.className='mgr '+cls+(canDrop?' drop':'');
-      row.onclick=e=>{if(!e.target.classList.contains('mgdel')&&canDrop)guestToGrp(gi)};
-      const b=document.createElement('div');b.className='mgbdg '+(cls||'empty');b.textContent=meldLbl(gCards,bv);row.appendChild(b);
-      gCards.forEach(c=>{const cel=mkCEl(c,bv,false,null,false,'nohov');cel.style.cursor='pointer';cel.onclick=e=>{e.stopPropagation();guestFrGrp(c.id,gi)};row.appendChild(cel)});
-      const del=document.createElement('div');del.className='mgdel';del.textContent='×';del.onclick=e=>{e.stopPropagation();guestDelGrp(gi)};row.appendChild(del);mgEl.appendChild(row);
-    });
-    if(!GSL.meldGroups.length){const h=document.createElement('div');h.className='mzhint';h.textContent='Sélectionne une carte, puis "+ Nouveau pli"';mgEl.appendChild(h)}
-    if(GSL.selCard!==null&&!gIds.has(GSL.selCard)){const nb=document.createElement('button');nb.className='bsm gold';nb.textContent='+ Nouveau pli';nb.onclick=()=>guestToGrp(-1);mtEl.appendChild(nb)}
+    mzEl.style.display='none';
   }else{
     // Afficher les melds exposés par un autre joueur
     if(GS.exposedMelds&&GS.exposedBy!=null&&GS.exposedBy!==GS.myIdx){
