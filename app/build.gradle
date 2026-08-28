@@ -9,7 +9,7 @@ android {
         applicationId "com.verby188.cinqrois"
         minSdk 24
         targetSdk 36
-        versionCode 63
+        versionCode 64
         versionName "2.0.6"
     }
     buildTypes {
