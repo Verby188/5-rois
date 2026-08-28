@@ -3596,6 +3596,24 @@ async function updateLeaderboard(sorted){
       lastPlayed:Date.now()
     };
     await fbSet('leaderboard/'+CUR_USER.uid,newEntry);
+
+    // ── Horodatage pour le palmarès mensuel ──
+    // Une entrée par partie, rangée par mois (AAAA-MM) pour faciliter
+    // le calcul du classement du mois et le nettoyage des vieux mois.
+    // On enregistre : pseudo, victoire (0/1), score de la partie, format,
+    // et la date. Toutes les parties comptent (solo IA inclus).
+    try{
+      const now=new Date();
+      const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+      await fbPush('cinqrois_games/'+ym,{
+        uid:CUR_USER.uid,
+        pseudo:CUR_USER.pseudo,
+        won:won?1:0,
+        score:myScore,
+        fast:isFast?1:0,
+        ts:Date.now()
+      });
+    }catch(e){console.warn('Monthly game log failed',e);}
   }catch(e){console.warn('Leaderboard update failed',e);}
 }
 
