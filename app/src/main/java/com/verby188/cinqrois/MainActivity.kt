@@ -212,6 +212,19 @@ class MainActivity : AppCompatActivity() {
                         startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
                         true
                     }
+                    // Liens externes non-web (Discord, Play Store, etc.) :
+                    // http/https restent dans la WebView ; tout le reste
+                    // (market://, discord://, intent://, etc.) est confié au
+                    // système Android, qui ouvre l'app appropriée.
+                    !url.startsWith("http://") && !url.startsWith("https://") -> {
+                        try {
+                            startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)))
+                        } catch (e: Exception) {
+                            // Aucune app pour ce lien : on ignore proprement
+                            // plutôt que de laisser la WebView planter.
+                        }
+                        true
+                    }
                     else -> false
                 }
             }
