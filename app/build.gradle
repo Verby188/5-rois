@@ -9,8 +9,8 @@ android {
         applicationId "com.verby188.cinqrois"
         minSdk 24
         targetSdk 36
-        versionCode 65
-        versionName "2.0.6"
+        versionCode 66
+        versionName "2.0.7"
     }
     buildTypes {
         debug { minifyEnabled false }
