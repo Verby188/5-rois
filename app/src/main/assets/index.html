@@ -992,7 +992,8 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
       </div>
 
     </div>
-    <div style="height:2rem"></div>
+    <div id="rules-version" style="text-align:center;color:var(--gold2);opacity:.6;font-size:.8rem;margin:1rem 0 .5rem">Version 2.0.7</div>
+    <div style="height:1.5rem"></div>
   </div>
 </div>
 
@@ -1238,7 +1239,8 @@ let _soundEnabled = localStorage.getItem('cinqr_sound') !== '0';
 const EMOJI_DURATION = 3000; // ms d'affichage
 
 // ══ QUOI DE NEUF ══
-const APP_VERSION='1.9';
+const APP_VERSION='2.0.7';
+const GAME_VERSION='2.0.7'; // version affichée au joueur (écran des règles) — à mettre à jour à chaque build
 const WN_FEATURES=[
   {v:'1.0',icon:'🤖',bg:'#311b92,#4527a0',title:'Jeu contre l\'IA',img:'img/wn/ia.png',
    desc:'Jouez seul contre 1 à 7 adversaires IA. Depuis le lobby appuyez sur <b>Partie locale</b>, choisissez le nombre de joueurs et basculez chaque slot en <b>Humain</b> ou <b>IA</b>.'},
@@ -5114,6 +5116,8 @@ function _autoJoinRoom(d){
 
 // Init
 window.addEventListener('DOMContentLoaded',()=>{
+  // Afficher la version (une seule source : GAME_VERSION)
+  try{var _rv=document.getElementById('rules-version');if(_rv)_rv.textContent='Version '+GAME_VERSION;}catch(e){}
   document.getElementById('cover').classList.remove('on');
   document.getElementById('ov').classList.remove('on');
   document.getElementById('popup').classList.remove('on');
