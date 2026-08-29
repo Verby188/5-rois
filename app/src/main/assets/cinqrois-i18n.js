@@ -36,6 +36,9 @@
    ═══════════════════════════════════════════════════════════════════════ */
 
 window.__CR_LANGS__ = {
+  "Suis-nous sur Facebook !": {"en": "Follow us on Facebook!", "it": "Seguici su Facebook!", "es": "¡Síguenos en Facebook!", "de": "Folge uns auf Facebook!", "pt": "Segue-nos no Facebook!", "nl": "Volg ons op Facebook!", "pl": "Śledź nas na Facebooku!"},
+  "Actus, nouveautés et coulisses de 5 Rois.": {"en": "News, updates and behind the scenes of 5 Rois.", "it": "Notizie, novità e retroscena di 5 Rois.", "es": "Noticias, novedades y entresijos de 5 Rois.", "de": "News, Neuigkeiten und Hintergründe von 5 Rois.", "pt": "Notícias, novidades e bastidores de 5 Rois.", "nl": "Nieuws, updates en achter de schermen van 5 Rois.", "pl": "Wiadomości, nowości i kulisy 5 Rois."},
+  "Voir la page": {"en": "View the page", "it": "Vedi la pagina", "es": "Ver la página", "de": "Zur Seite", "pt": "Ver a página", "nl": "Bekijk de pagina", "pl": "Zobacz stronę"},
   "Paramètres": {"en": "Settings", "it": "Impostazioni", "es": "Ajustes", "de": "Einstellungen", "pt": "Definições", "nl": "Instellingen", "pl": "Ustawienia"},
   "Thème": {"en": "Theme", "it": "Tema", "es": "Tema", "de": "Design", "pt": "Tema", "nl": "Thema", "pl": "Motyw"},
   "Langue": {"en": "Language", "it": "Lingua", "es": "Idioma", "de": "Sprache", "pt": "Idioma", "nl": "Taal", "pl": "Język"},

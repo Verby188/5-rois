@@ -128,6 +128,12 @@
 .set-discord .sd-d{font-size:.8rem;opacity:.92;line-height:1.4;margin-bottom:.7rem}
 .set-discord a{display:inline-flex;align-items:center;gap:.4rem;background:#fff;color:#4752c4;
   font-weight:700;text-decoration:none;padding:.5rem .9rem;border-radius:20px;font-size:.85rem}
+.set-facebook{margin-top:.5rem;background:linear-gradient(160deg,#1877F2,#0f5ac0);border-radius:14px;
+  padding:.9rem;text-align:center;color:#fff}
+.set-facebook .sd-t{font-weight:700;font-size:1rem;margin-bottom:.3rem}
+.set-facebook .sd-d{font-size:.8rem;opacity:.92;line-height:1.4;margin-bottom:.7rem}
+.set-facebook a{display:inline-flex;align-items:center;gap:.4rem;background:#fff;color:#1877F2;
+  font-weight:700;text-decoration:none;padding:.5rem .9rem;border-radius:20px;font-size:.85rem}
 
 /* ══ EMOJI ══ */
 #emoji-picker{position:fixed;z-index:250;background:rgba(10,40,20,.97);
@@ -703,6 +709,11 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
       <div class="sd-t">💬 Rejoins la communauté !</div>
       <div class="sd-d">Mises à jour, entraide et bonne humeur sur notre Discord 5 Rois.</div>
       <a href="https://discord.gg/k9xKJDm7Sm" target="_blank" rel="noopener">🎮 Rejoindre le Discord</a>
+    </div>
+    <div class="set-facebook">
+      <div class="sd-t">📘 Suis-nous sur Facebook !</div>
+      <div class="sd-d">Actus, nouveautés et coulisses de 5 Rois.</div>
+      <a href="https://www.facebook.com/people/5-Rois/61593599114478/" target="_blank" rel="noopener">👍 Voir la page</a>
     </div>
   </div>
 </div>
@@ -1453,17 +1464,44 @@ function setBadge(){
   b.textContent=NET.mode==='host'?`${crT('Hôte')} · ${NET.roomCode}`:NET.mode==='spectator'?`👁️ ${NET.roomCode}`:`Invité · ${NET.roomCode}`;
 }
 
+// Construit le suffixe d'authentification pour les requêtes Firebase.
+// Si l'utilisateur est connecté, on rafraîchit son token si besoin et on
+// l'ajoute via ?auth=... Si c'est un invité (pas de token), on n'ajoute rien :
+// la requête part comme avant. Tant que les règles Firebase restent ouvertes,
+// les deux cas fonctionnent — c'est l'étape 1 (l'app envoie le token, mais
+// Firebase ne l'exige pas encore).
+async function _fbAuthSuffix(){
+  try{
+    if(typeof CUR_USER!=='undefined' && CUR_USER && CUR_USER.refreshToken){
+      if(typeof ensureFreshToken==='function'){ await ensureFreshToken(); }
+      if(CUR_USER.idToken){ return '?auth='+encodeURIComponent(CUR_USER.idToken); }
+    }
+  }catch(e){}
+  return '';
+}
 async function fbGet(path){
-  try{const r=await fetch(DB_URL+'/'+path+'.json');if(!r.ok)return null;return r.json();}catch(e){return null;}
+  try{const a=await _fbAuthSuffix();const r=await fetch(DB_URL+'/'+path+'.json'+a);if(!r.ok)return null;return r.json();}catch(e){return null;}
 }
 async function fbSet(path,data){
-  try{await fetch(DB_URL+'/'+path+'.json',{method:'PUT',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});}catch(e){}
+  try{const a=await _fbAuthSuffix();await fetch(DB_URL+'/'+path+'.json'+a,{method:'PUT',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});}catch(e){}
 }
 async function fbPush(path,data){
-  try{const r=await fetch(DB_URL+'/'+path+'.json',{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});return r.json();}catch(e){}
+  try{const a=await _fbAuthSuffix();const r=await fetch(DB_URL+'/'+path+'.json'+a,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});return r.json();}catch(e){}
 }
 async function fbDel(path){
-  try{await fetch(DB_URL+'/'+path+'.json',{method:'DELETE'});}catch(e){}
+  try{const a=await _fbAuthSuffix();await fetch(DB_URL+'/'+path+'.json'+a,{method:'DELETE'});}catch(e){}
+}
+// Test « règle fantôme » : à la connexion, on écrit une entrée dans test_auth,
+// nœud protégé par une règle stricte (auth != null). Si l'écriture réussit,
+// c'est la preuve que le token est bien envoyé et accepté par Firebase.
+// À surveiller dans la console Firebase. Ce mécanisme sera retiré une fois
+// la sécurisation validée.
+async function fbAuthSelfTest(){
+  try{
+    if(typeof CUR_USER!=='undefined' && CUR_USER && CUR_USER.uid){
+      await fbPush('test_auth/'+CUR_USER.uid,{ts:Date.now(),ok:true});
+    }
+  }catch(e){}
 }
 
 function doCreate(){
@@ -4182,6 +4220,8 @@ function skipAuth(){
 }
 
 function onUserLoggedIn(){
+  // Test de sécurité (étape 1) : vérifie que le token passe. Sans effet visible.
+  fbAuthSelfTest();
   // Mettre à jour l'interface
   document.getElementById('lobby-profile').style.display='flex';
   document.getElementById('lobby-pseudo-lbl').textContent=CUR_USER.pseudo;
