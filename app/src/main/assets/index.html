@@ -1481,14 +1481,41 @@ async function _fbAuthSuffix(){
   }catch(e){}
   return '';
 }
+// ── Détection « version trop ancienne » (préparation étape 2 sécurité) ──
+// Quand les règles Firebase seront resserrées, une version sans token valide
+// verra ses écritures REFUSÉES (401/403). Au lieu de laisser l'erreur passer
+// silencieusement, on informe le joueur qu'il doit mettre à jour. Ce mécanisme
+// est posé MAINTENANT pour être déjà présent chez les joueurs AVANT le
+// resserrement des règles (sinon ils seraient bloqués sans explication).
+var _updateMsgShown=false;
+function _onFirebaseDenied(){
+  if(_updateMsgShown)return;      // n'afficher qu'une fois
+  _updateMsgShown=true;
+  try{
+    var ov=document.createElement('div');
+    ov.id='update-required-ov';
+    ov.style.cssText='position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:1.5rem;backdrop-filter:blur(3px)';
+    var box=document.createElement('div');
+    box.style.cssText='background:linear-gradient(160deg,#0a2e18,#06210f);border:1.5px solid rgba(200,160,0,.4);border-radius:16px;max-width:340px;padding:1.5rem;text-align:center;color:#fff;box-shadow:0 8px 32px rgba(0,0,0,.6)';
+    var t=(typeof crT==='function')?crT('Mise à jour requise'):'Mise à jour requise';
+    var m=(typeof crT==='function')?crT('Une nouvelle version est disponible. Merci de mettre à jour 5 Rois pour continuer à jouer.'):'Une nouvelle version est disponible. Merci de mettre à jour 5 Rois pour continuer à jouer.';
+    var b=(typeof crT==='function')?crT('Mettre à jour'):'Mettre à jour';
+    box.innerHTML='<div style="font-size:2rem;margin-bottom:.5rem">👑</div>'+
+      '<div style="font-family:Cinzel,serif;color:#e8c86a;font-size:1.2rem;margin-bottom:.6rem">'+t+'</div>'+
+      '<div style="font-size:.9rem;line-height:1.5;opacity:.92;margin-bottom:1.2rem">'+m+'</div>'+
+      '<a href="https://play.google.com/store/apps/details?id=com.verby188.cinqrois" target="_blank" rel="noopener" style="display:inline-block;background:linear-gradient(90deg,#e8c86a,#c9a13b);color:#0a2e18;font-weight:700;text-decoration:none;padding:.7rem 1.4rem;border-radius:24px;font-size:.95rem">'+b+'</a>';
+    ov.appendChild(box);
+    document.body.appendChild(ov);
+  }catch(e){}
+}
 async function fbGet(path){
   try{const a=await _fbAuthSuffix();const r=await fetch(DB_URL+'/'+path+'.json'+a);if(!r.ok)return null;return r.json();}catch(e){return null;}
 }
 async function fbSet(path,data){
-  try{const a=await _fbAuthSuffix();await fetch(DB_URL+'/'+path+'.json'+a,{method:'PUT',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});}catch(e){}
+  try{const a=await _fbAuthSuffix();const r=await fetch(DB_URL+'/'+path+'.json'+a,{method:'PUT',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});if(r&&(r.status===401||r.status===403))_onFirebaseDenied();}catch(e){}
 }
 async function fbPush(path,data){
-  try{const a=await _fbAuthSuffix();const r=await fetch(DB_URL+'/'+path+'.json'+a,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});return r.json();}catch(e){}
+  try{const a=await _fbAuthSuffix();const r=await fetch(DB_URL+'/'+path+'.json'+a,{method:'POST',body:JSON.stringify(data),headers:{'Content-Type':'application/json'}});if(r&&(r.status===401||r.status===403)){_onFirebaseDenied();return;}return r.json();}catch(e){}
 }
 async function fbDel(path){
   try{const a=await _fbAuthSuffix();await fetch(DB_URL+'/'+path+'.json'+a,{method:'DELETE'});}catch(e){}
@@ -1499,9 +1526,41 @@ async function fbDel(path){
 // À surveiller dans la console Firebase. Ce mécanisme sera retiré une fois
 // la sécurisation validée.
 async function fbAuthSelfTest(){
+  // Témoin de sécurité (étape 1) : à chaque connexion, écrit dans test_auth
+  // (nœud protégé par auth != null). Une SEULE entrée par compte (fbSet écrase,
+  // pas d'accumulation), avec un compteur incrémenté à chaque connexion réussie.
+  // Un compteur qui grimpe prouve que le token est accepté SYSTÉMATIQUEMENT,
+  // pas par hasard une seule fois. À retirer après l'étape 2 (règles resserrées).
   try{
     if(typeof CUR_USER!=='undefined' && CUR_USER && CUR_USER.uid){
-      await fbPush('test_auth/'+CUR_USER.uid,{ts:Date.now(),ok:true});
+      // lire l'état actuel (échoue silencieusement si absent)
+      let count=0, firstTs=Date.now();
+      try{
+        const prev=await fbGet('test_auth/'+CUR_USER.uid);
+        if(prev){
+          if(typeof prev.count==='number') count=prev.count;
+          if(prev.firstTs) firstTs=prev.firstTs; // conserver la 1re connexion
+        }
+      }catch(e){}
+      await fbSet('test_auth/'+CUR_USER.uid,{
+        count:count+1,   // nb de connexions réussies avec token → prouve la régularité
+        firstTs:firstTs, // date de la toute 1re connexion validée
+        lastTs:Date.now(),
+        ok:true
+      });
+    }
+  }catch(e){}
+}
+// Enregistre la version RÉELLEMENT installée dans le profil du compte, à chaque
+// connexion. Contrairement à lastSeenVersion (qui ne bouge qu'à l'affichage du
+// "Quoi de neuf"), ce champ reflète fidèlement la version du jeu que fait tourner
+// chaque compte. Sert à savoir, côté comptes (pas appareils), quelle proportion
+// est à jour — indispensable pour décider quand resserrer les règles Firebase.
+async function recordCurrentVersion(){
+  try{
+    if(typeof CUR_USER!=='undefined' && CUR_USER && CUR_USER.uid && typeof GAME_VERSION!=='undefined'){
+      await fbSet('users/'+CUR_USER.uid+'/currentVersion',GAME_VERSION);
+      await fbSet('users/'+CUR_USER.uid+'/lastVersionSeen',Date.now());
     }
   }catch(e){}
 }
@@ -4224,6 +4283,8 @@ function skipAuth(){
 function onUserLoggedIn(){
   // Test de sécurité (étape 1) : vérifie que le token passe. Sans effet visible.
   fbAuthSelfTest();
+  // Enregistre la version installée dans le profil (suivi du déploiement par compte).
+  recordCurrentVersion();
   // Mettre à jour l'interface
   document.getElementById('lobby-profile').style.display='flex';
   document.getElementById('lobby-pseudo-lbl').textContent=CUR_USER.pseudo;
