@@ -3135,12 +3135,8 @@ function render(){
     } else {
       wrap.appendChild(nm);
     }
-    const row=document.createElement('div');row.className='orow';
-    const shown=Math.min(p.hand.length,6);
-    for(let k=0;k<shown;k++)row.appendChild(mkBack(true));
-    if(p.hand.length>shown){const m=document.createElement('span');m.style.cssText='color:rgba(255,255,255,.3);font-size:.6rem;align-self:center;margin-left:3px';m.textContent=`+${p.hand.length-shown}`;row.appendChild(m)}
-    const cnt=document.createElement('div');cnt.style.cssText='font-size:.56rem;color:rgba(255,255,255,.25)';cnt.textContent=`${p.hand.length} ${_plur(p.hand.length,'carte','cartes')}${!p.isHuman?' ('+crT('IA')+')':''}`;
-    wrap.appendChild(row);wrap.appendChild(cnt);oa.appendChild(wrap);
+    // Cartes adverses retirées (gain de place) : on garde nom, indicateur de tour et emoji.
+    oa.appendChild(wrap);
   });
 
   // Deck
@@ -3304,12 +3300,8 @@ function renderGuest(){
     } else {
       wrap.appendChild(nm);
     }
-    const row=document.createElement('div');row.className='orow';
-    const shown=Math.min(p.handCount,6);
-    for(let k=0;k<shown;k++)row.appendChild(mkBack(true));
-    if(p.handCount>shown){const m=document.createElement('span');m.style.cssText='color:rgba(255,255,255,.3);font-size:.6rem;align-self:center;margin-left:3px';m.textContent=`+${p.handCount-shown}`;row.appendChild(m)}
-    const cnt=document.createElement('div');cnt.style.cssText='font-size:.56rem;color:rgba(255,255,255,.25)';cnt.textContent=`${p.handCount} ${_plur(p.handCount,'carte','cartes')}${!p.isHuman?' ('+crT('IA')+')':''}`;
-    wrap.appendChild(row);wrap.appendChild(cnt);oa.appendChild(wrap);
+    // Cartes adverses retirées (gain de place) : on garde nom, indicateur de tour et emoji.
+    oa.appendChild(wrap);
   });
 
   // Deck
