@@ -435,11 +435,11 @@ h1{font-family:'Cinzel',serif;font-size:clamp(2rem,7vw,4rem);color:var(--gold);
    meilleure lisibilité, demandée par les joueurs. flex-shrink autorisé pour que,
    aux manches chargées (13 cartes), elles puissent rétrécir un peu si besoin
    plutôt que déborder. N'affecte QUE la main, pas défausse/pioche/adversaires. */
-.hline > .card{flex:1 1 0;min-width:0;max-width:78px;width:auto;height:auto;aspect-ratio:72/102}
+#hrows .hline > .card{flex:1 1 0 !important;min-width:0 !important;max-width:96px !important;width:auto !important;height:auto !important;aspect-ratio:72/102 !important}
 /* Contenu agrandi pour les cartes de la main (meilleure lisibilité demandée) */
-.hline > .card .cv{font-size:16px}
-.hline > .card .cs{font-size:13px}
-.hline > .card .cm{font-size:38px}
+#hrows .hline > .card .cv{font-size:19px !important}
+#hrows .hline > .card .cs{font-size:15px !important}
+#hrows .hline > .card .cm{font-size:44px !important}
 
 /* ══ ACTION BAR ══ */
 .abar{display:flex;gap:.55rem;justify-content:center;flex-wrap:wrap;padding:.15rem}
