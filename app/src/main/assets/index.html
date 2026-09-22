@@ -1489,7 +1489,12 @@ async function _fbAuthSuffix(){
   try{
     if(typeof CUR_USER!=='undefined' && CUR_USER && CUR_USER.refreshToken){
       if(typeof ensureFreshToken==='function'){ await ensureFreshToken(); }
-      if(CUR_USER.idToken){ return '?auth='+encodeURIComponent(CUR_USER.idToken); }
+      // N'ajouter le token QUE s'il est encore valide (refresh réussi). Un token
+      // expiré provoquerait un 401 même avec des règles ouvertes → on l'évite en
+      // envoyant la requête sans auth (elle passe tant que les règles sont ouvertes).
+      if(CUR_USER.idToken && CUR_USER.tokenExpiry && Date.now() < CUR_USER.tokenExpiry-5000){
+        return '?auth='+encodeURIComponent(CUR_USER.idToken);
+      }
     }
   }catch(e){}
   return '';
@@ -1502,7 +1507,13 @@ async function _fbAuthSuffix(){
 // resserrement des règles (sinon ils seraient bloqués sans explication).
 var _updateMsgShown=false;
 function _onFirebaseDenied(){
-  if(_updateMsgShown)return;      // n'afficher qu'une fois
+  // DÉSACTIVÉ tant que l'étape 2 (resserrement des règles) n'est pas faite.
+  // Avant l'étape 2, un 401/403 vient d'un token expiré ou d'une erreur réseau,
+  // PAS d'une version périmée → il ne faut pas afficher la modale (elle bloquait
+  // des joueurs à jour). À réactiver au moment du resserrement des règles.
+  return;
+  // eslint-disable-next-line no-unreachable
+  if(_updateMsgShown)return;
   _updateMsgShown=true;
   try{
     var ov=document.createElement('div');
