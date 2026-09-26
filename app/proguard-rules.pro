@@ -13,3 +13,10 @@
 
 # AndroidX Startup (initialisation au démarrage)
 -keep class androidx.startup.** { *; }
+
+# Meta Audience Network (médiation publicitaire) — le SDK référence des
+# annotations internes (Nullsafe) absentes au runtime : on garde le SDK entier
+# et on ignore ces annotations, comme recommandé pour tout SDK pub tiers avec R8.
+-keep class com.facebook.ads.** { *; }
+-dontwarn com.facebook.ads.**
+-dontwarn com.facebook.infer.annotation.**
